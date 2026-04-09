@@ -2055,16 +2055,22 @@ class SM_Public {
         // Handle Sidebar Visibility Settings Save
         if (isset($_POST['sm_save_sidebar_visibility']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
             if (current_user_can('إدارة_النظام')) {
+                $roles_to_process = array('sm_system_admin', 'sm_principal', 'sm_supervisor', 'sm_coordinator', 'sm_teacher', 'sm_student', 'sm_parent');
+                $sections_to_process = array('stats', 'students', 'teachers', 'parents', 'grades', 'teacher-reports', 'confiscated', 'printing', 'surveys', 'timetables', 'attendance', 'lesson-plans', 'assignments', 'clinic', 'messaging', 'events');
+
                 $visibility = array();
-                if (isset($_POST['sidebar_visibility']) && is_array($_POST['sidebar_visibility'])) {
-                    foreach ($_POST['sidebar_visibility'] as $role => $sections) {
-                        $visibility[$role] = array();
-                        foreach ($sections as $section => $val) {
-                            $visibility[$role][$section] = (bool)$val;
-                        }
+                $input = isset($_POST['sidebar_visibility']) ? $_POST['sidebar_visibility'] : array();
+
+                foreach ($roles_to_process as $role) {
+                    $visibility[$role] = array();
+                    foreach ($sections_to_process as $sec) {
+                        // Explicitly save false if not checked to prevent falling back to defaults
+                        $visibility[$role][$sec] = !empty($input[$role][$sec]);
                     }
                 }
+
                 SM_Settings::save_sidebar_visibility($visibility);
+                SM_Logger::log('تحديث إعدادات ظهور القائمة', 'تم تخصيص الأقسام المرئية لكل رتبة في النظام.');
                 wp_redirect(add_query_arg('sm_admin_msg', 'settings_saved', $_SERVER['REQUEST_URI']));
                 exit;
             }
@@ -2153,6 +2159,9 @@ class SM_Public {
                     $data = $row_obj['data'];
                     $row_index = $row_obj['index'];
                     $results['total']++;
+
+                    $errors = array();
+                    $warnings = array();
 
                     // Attempt encoding conversion for Arabic (handles mixed encodings)
                     foreach ($data as $k => $v) {
