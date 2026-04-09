@@ -157,20 +157,25 @@ class SM_DB {
     public static function update_student($id, $data) {
         global $wpdb;
         SM_Logger::log('تعديل بيانات طالب', "معرف الطالب: $id");
+
+        $update_data = array();
+        if (isset($data['name'])) $update_data['name'] = sanitize_text_field($data['name']);
+        if (isset($data['class_name'])) $update_data['class_name'] = sanitize_text_field($data['class_name']);
+        if (isset($data['section'])) $update_data['section'] = sanitize_text_field($data['section']);
+        if (isset($data['parent_email'])) $update_data['parent_email'] = sanitize_email($data['parent_email']);
+        if (isset($data['guardian_phone'])) $update_data['guardian_phone'] = sanitize_text_field($data['guardian_phone']);
+        if (isset($data['nationality'])) $update_data['nationality'] = sanitize_text_field($data['nationality']);
+        if (isset($data['registration_date'])) $update_data['registration_date'] = sanitize_text_field($data['registration_date']);
+        if (isset($data['student_code'])) $update_data['student_code'] = sanitize_text_field($data['student_code']);
+
+        if (isset($data['parent_user_id'])) $update_data['parent_user_id'] = !empty($data['parent_user_id']) ? intval($data['parent_user_id']) : null;
+        if (isset($data['teacher_id'])) $update_data['teacher_id'] = !empty($data['teacher_id']) ? intval($data['teacher_id']) : null;
+
+        if (empty($update_data)) return false;
+
         return $wpdb->update(
             "{$wpdb->prefix}sm_students",
-            array(
-                'name' => sanitize_text_field($data['name']),
-                'class_name' => sanitize_text_field($data['class_name']),
-                'section' => sanitize_text_field($data['section'] ?? ''),
-                'parent_email' => sanitize_email($data['parent_email'] ?? ''),
-                'guardian_phone' => sanitize_text_field($data['guardian_phone'] ?? ''),
-                'nationality' => sanitize_text_field($data['nationality'] ?? ''),
-                'registration_date' => sanitize_text_field($data['registration_date'] ?? ''),
-                'student_code' => sanitize_text_field($data['student_code']),
-                'parent_user_id' => !empty($data['parent_user_id']) ? intval($data['parent_user_id']) : null,
-                'teacher_id' => !empty($data['teacher_id']) ? intval($data['teacher_id']) : null
-            ),
+            $update_data,
             array('id' => $id)
         );
     }
@@ -497,12 +502,12 @@ class SM_DB {
         
         $where = " WHERE 1=1";
         if (!empty($filters['teacher_id'])) {
-            $where .= $wpdb->prepare(" AND teacher_id = %d", $filters['teacher_id']);
+            $where .= $wpdb->prepare(" AND r.teacher_id = %d", $filters['teacher_id']);
         }
 
-        $stats['by_type'] = $wpdb->get_results("SELECT type, COUNT(*) as count FROM {$wpdb->prefix}sm_records $where GROUP BY type");
-        $stats['by_severity'] = $wpdb->get_results("SELECT severity, COUNT(*) as count FROM {$wpdb->prefix}sm_records $where GROUP BY severity");
-        $stats['by_degree'] = $wpdb->get_results("SELECT degree, COUNT(*) as count FROM {$wpdb->prefix}sm_records $where GROUP BY degree ORDER BY degree ASC");
+        $stats['by_type'] = $wpdb->get_results("SELECT type, COUNT(*) as count FROM {$wpdb->prefix}sm_records r $where GROUP BY type");
+        $stats['by_severity'] = $wpdb->get_results("SELECT severity, COUNT(*) as count FROM {$wpdb->prefix}sm_records r $where GROUP BY severity");
+        $stats['by_degree'] = $wpdb->get_results("SELECT degree, COUNT(*) as count FROM {$wpdb->prefix}sm_records r $where GROUP BY degree ORDER BY degree ASC");
         $stats['by_class'] = $wpdb->get_results("SELECT s.class_name, COUNT(r.id) as count FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id $where GROUP BY s.class_name");
         
         if (!empty($filters['teacher_id'])) {
@@ -516,11 +521,11 @@ class SM_DB {
         // Optimized: Combined counts in a single query
         $summary_counts = $wpdb->get_row("
             SELECT
-                COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as violations_today,
-                COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as violations_week,
-                COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as violations_month,
-                COUNT(CASE WHEN action_taken != '' THEN 1 END) as total_actions
-            FROM {$wpdb->prefix}sm_records $where
+                COUNT(CASE WHEN DATE(r.created_at) = CURDATE() THEN 1 END) as violations_today,
+                COUNT(CASE WHEN r.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as violations_week,
+                COUNT(CASE WHEN r.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as violations_month,
+                COUNT(CASE WHEN r.action_taken != '' THEN 1 END) as total_actions
+            FROM {$wpdb->prefix}sm_records r $where
         ");
 
         $stats['violations_today'] = $summary_counts->violations_today;
@@ -539,10 +544,10 @@ class SM_DB {
         ");
 
         $stats['trends'] = $wpdb->get_results("
-            SELECT DATE(created_at) as date, COUNT(*) as count 
-            FROM {$wpdb->prefix}sm_records 
-            $where AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY DATE(created_at) 
+            SELECT DATE(r.created_at) as date, COUNT(*) as count
+            FROM {$wpdb->prefix}sm_records r
+            $where AND r.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(r.created_at)
             ORDER BY date ASC
         ");
 

@@ -423,6 +423,9 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                     <li class="sm-sidebar-item <?php echo $active_tab == 'teachers' ? 'sm-active' : ''; ?>">
                         <a href="<?php echo add_query_arg('sm_tab', 'teachers'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-admin-users"></span> إدارة مستخدمي النظام</a>
                     </li>
+                    <li class="sm-sidebar-item <?php echo $active_tab == 'parents' ? 'sm-active' : ''; ?>">
+                        <a href="<?php echo add_query_arg('sm_tab', 'parents'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-admin-users"></span> إدارة أولياء الأمور</a>
+                    </li>
                 <?php endif; ?>
 
                 <?php if ($is_admin || $is_sys_admin || $is_principal || $is_supervisor || $is_coordinator || $is_teacher): ?>
@@ -536,6 +539,11 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                     }
                     break;
 
+                case 'parents':
+                    if ($is_admin || current_user_can('إدارة_أولياء_الأمور')) {
+                        include SM_PLUGIN_DIR . 'templates/admin-parents.php';
+                    }
+                    break;
 
                 case 'printing':
                     if ($is_admin || current_user_can('طباعة_التقارير')) {
