@@ -42,17 +42,40 @@
             </table>
         </div>
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" onsubmit="return handleImportSubmit(this, 'sm_import_teachers_csv')">
             <?php wp_nonce_field('sm_admin_action', 'sm_admin_nonce'); ?>
             <div class="sm-form-group">
                 <label class="sm-label">اختر ملف CSV للمعلمين:</label>
                 <input type="file" name="csv_file" accept=".csv" required>
+            </div>
+            <div id="import-loading" style="display:none; margin-bottom: 15px; padding: 10px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-weight: 700;">
+                <span class="dashicons dashicons-update spin" style="margin-left: 10px;"></span>
+                جاري استيراد البيانات... يرجى عدم إغلاق الصفحة.
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button type="submit" name="sm_import_teachers_csv" class="sm-btn" style="width:auto; background:#27ae60;">استيراد القائمة الآن</button>
                 <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" class="sm-btn" style="width:auto; background:var(--sm-text-gray);">إلغاء</button>
             </div>
         </form>
+
+        <script>
+        function handleImportSubmit(form, btnName) {
+            const btn = form.querySelector('button[name="' + btnName + '"]');
+            const loader = form.querySelector('#import-loading');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerText = 'جاري المعالجة...';
+            if(loader) loader.style.display = 'block';
+
+            return true;
+        }
+        </script>
+
+        <style>
+        @keyframes spin { 100% { transform:rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+        </style>
     </div>
 
     <div class="sm-tabs-wrapper" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee;">
