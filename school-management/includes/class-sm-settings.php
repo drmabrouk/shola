@@ -279,4 +279,21 @@ class SM_Settings {
     public static function save_timetable_settings($data) {
         update_option('sm_timetable_settings', $data);
     }
+
+    public static function get_sidebar_visibility() {
+        $default = array(
+            'sm_system_admin' => array('stats' => true, 'students' => true, 'teachers' => true, 'parents' => true, 'grades' => true, 'teacher-reports' => true, 'confiscated' => true, 'printing' => true, 'surveys' => true, 'timetables' => true, 'attendance' => true, 'lesson-plans' => true, 'assignments' => true),
+            'sm_principal' => array('stats' => true, 'students' => true, 'teachers' => true, 'parents' => true, 'grades' => true, 'teacher-reports' => true, 'confiscated' => true, 'printing' => true, 'surveys' => true, 'timetables' => true, 'attendance' => true, 'lesson-plans' => true, 'assignments' => true),
+            'sm_supervisor' => array('stats' => true, 'students' => true, 'teachers' => true, 'parents' => true, 'grades' => true, 'teacher-reports' => true, 'confiscated' => true, 'printing' => true, 'surveys' => true, 'timetables' => true, 'attendance' => true, 'lesson-plans' => true, 'assignments' => true),
+            'sm_coordinator' => array('stats' => false, 'students' => false, 'teachers' => false, 'parents' => false, 'grades' => true, 'teacher-reports' => false, 'confiscated' => false, 'printing' => false, 'surveys' => false, 'timetables' => false, 'attendance' => false, 'lesson-plans' => true, 'assignments' => false),
+            'sm_teacher' => array('stats' => true, 'students' => true, 'teachers' => false, 'parents' => false, 'grades' => true, 'teacher-reports' => false, 'confiscated' => false, 'printing' => false, 'surveys' => false, 'timetables' => false, 'attendance' => true, 'lesson-plans' => true, 'assignments' => true),
+            'sm_student' => array('stats' => true, 'students' => false, 'teachers' => false, 'parents' => false, 'grades' => true, 'teacher-reports' => false, 'confiscated' => false, 'printing' => false, 'surveys' => false, 'timetables' => false, 'attendance' => false, 'lesson-plans' => false, 'assignments' => true),
+            'sm_parent' => array('stats' => true, 'students' => false, 'teachers' => false, 'parents' => false, 'grades' => true, 'teacher-reports' => false, 'confiscated' => false, 'printing' => false, 'surveys' => false, 'timetables' => false, 'attendance' => false, 'lesson-plans' => false, 'assignments' => false),
+        );
+        return wp_parse_args(get_option('sm_sidebar_visibility', array()), $default);
+    }
+
+    public static function save_sidebar_visibility($data) {
+        update_option('sm_sidebar_visibility', $data);
+    }
 }

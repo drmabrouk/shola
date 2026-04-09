@@ -2052,6 +2052,24 @@ class SM_Public {
             }
         }
 
+        // Handle Sidebar Visibility Settings Save
+        if (isset($_POST['sm_save_sidebar_visibility']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
+            if (current_user_can('إدارة_النظام')) {
+                $visibility = array();
+                if (isset($_POST['sidebar_visibility']) && is_array($_POST['sidebar_visibility'])) {
+                    foreach ($_POST['sidebar_visibility'] as $role => $sections) {
+                        $visibility[$role] = array();
+                        foreach ($sections as $section => $val) {
+                            $visibility[$role][$section] = (bool)$val;
+                        }
+                    }
+                }
+                SM_Settings::save_sidebar_visibility($visibility);
+                wp_redirect(add_query_arg('sm_admin_msg', 'settings_saved', $_SERVER['REQUEST_URI']));
+                exit;
+            }
+        }
+
         // Handle Notifications Settings Save
         if (isset($_POST['sm_save_notif']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
             if (current_user_can('إدارة_النظام')) {
