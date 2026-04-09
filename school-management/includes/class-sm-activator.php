@@ -256,6 +256,7 @@ class SM_Activator {
             'review_plans' => 'مراجعة_التحضير',
             'manage_grades' => 'إدارة_الدرجات',
             'manage_assignments' => 'إدارة_الواجبات',
+            'manage_parents' => 'إدارة_أولياء_الأمور',
             'view_own_data' => 'عرض_بياناتي',
             'submit_complaint' => 'تقديم_شكوى'
         );
@@ -327,6 +328,14 @@ class SM_Activator {
         if ($clinic) {
             $clinic->add_cap($caps['manage_clinic']);
             $clinic->add_cap('read');
+        }
+
+        // 8. ولي أمر (Parent) - View own children's data
+        add_role('sm_parent', 'ولي أمر', array('read' => true));
+        $parent = get_role('sm_parent');
+        if ($parent) {
+            $parent->add_cap($caps['view_own_data']);
+            $parent->add_cap('read');
         }
     }
 

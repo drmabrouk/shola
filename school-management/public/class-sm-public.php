@@ -130,6 +130,7 @@ class SM_Public {
         $is_coordinator = in_array('sm_coordinator', $roles);
         $is_teacher = in_array('sm_teacher', $roles);
         $is_student = in_array('sm_student', $roles);
+        $is_parent = in_array('sm_parent', $roles);
 
         // Security / Capability check for tabs
         if ($active_tab === 'record' && !current_user_can('تسجيل_مخالفة')) $active_tab = 'summary';
@@ -2182,9 +2183,6 @@ class SM_Public {
                     $nationality       = isset($data[3]) ? trim($data[3]) : '';
                     $guardian_email    = isset($data[4]) ? trim($data[4]) : '';
                     $guardian_phone    = isset($data[5]) ? trim($data[5]) : '';
-
-                    $errors = array();
-                    $warnings = array();
 
                     if (empty($full_display_name)) {
                         $errors[] = "الاسم الكامل مفقود في السطر " . $row_index;
