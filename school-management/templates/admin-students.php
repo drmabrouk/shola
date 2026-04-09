@@ -144,17 +144,40 @@ if ($import_results) {
             <p style="font-size:12px; color:#718096; line-height: 1.6;">يرجى التأكد من أن ملف الإكسل يحتوي على كافة سجلات الطلاب وأن البيانات مرتبة بدقة في الأعمدة المذكورة أعلاه (A, B, C) لضمان نجاح عملية الاستيراد.</p>
         </div>
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" onsubmit="return handleImportSubmit(this)">
             <?php wp_nonce_field('sm_admin_action', 'sm_admin_nonce'); ?>
             <div class="sm-form-group">
                 <label class="sm-label">اختر ملف CSV للملفات:</label>
                 <input type="file" name="csv_file" accept=".csv" required>
+            </div>
+            <div id="import-loading" style="display:none; margin-bottom: 15px; padding: 10px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-weight: 700;">
+                <span class="dashicons dashicons-update spin" style="margin-left: 10px;"></span>
+                جاري استيراد البيانات... يرجى عدم إغلاق الصفحة.
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button type="submit" name="sm_import_csv" class="sm-btn" style="width:auto; background:#27ae60;">بدء عملية الاستيراد</button>
                 <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" class="sm-btn" style="width:auto; background:var(--sm-text-gray);">إلغاء</button>
             </div>
         </form>
+
+        <script>
+        function handleImportSubmit(form) {
+            const btn = form.querySelector('button[name="sm_import_csv"]');
+            const loader = document.getElementById('import-loading');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerText = 'جاري المعالجة...';
+            loader.style.display = 'block';
+
+            return true;
+        }
+        </script>
+
+        <style>
+        @keyframes spin { 100% { transform:rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+        </style>
     </div>
     
     <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #f8fafc; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;">

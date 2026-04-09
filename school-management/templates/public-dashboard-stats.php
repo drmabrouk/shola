@@ -7,16 +7,6 @@
     $is_parent = in_array('sm_parent', $user_roles) || in_array('sm_student', $user_roles);
     ?>
 
-    <!-- Quick Export Actions -->
-    <?php if (!$is_parent): ?>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px;">
-        <span style="align-self: center; font-weight: 700; font-size: 13px; color: #4a5568; margin-left: 10px;">تحميل القوائم:</span>
-        <a href="<?php echo admin_url('admin-ajax.php?action=sm_print&print_type=violation_report&range=today'); ?>" target="_blank" class="sm-btn sm-btn-outline" style="font-size: 11px; padding: 8px 15px; width: auto; color: var(--sm-primary-color) !important; border-color: var(--sm-primary-color);">مخالفات اليوم (PDF)</a>
-        <a href="<?php echo admin_url('admin-ajax.php?action=sm_print&print_type=violation_report&range=week'); ?>" target="_blank" class="sm-btn sm-btn-outline" style="font-size: 11px; padding: 8px 15px; width: auto; color: var(--sm-primary-color) !important; border-color: var(--sm-primary-color);">مخالفات الأسبوع (PDF)</a>
-        <a href="<?php echo admin_url('admin-ajax.php?action=sm_print&print_type=violation_report&range=month'); ?>" target="_blank" class="sm-btn sm-btn-outline" style="font-size: 11px; padding: 8px 15px; width: auto; color: var(--sm-primary-color) !important; border-color: var(--sm-primary-color);">مخالفات الشهر (PDF)</a>
-    </div>
-    <?php endif; ?>
-
     <div style="background: white; padding: 30px; border: 1px solid var(--sm-border-color); border-radius: var(--sm-radius); margin-bottom: 30px; box-shadow: var(--sm-shadow);">
         <form method="get" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
             <input type="hidden" name="page" value="sm-dashboard">
@@ -122,17 +112,40 @@
             </table>
         </div>
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" onsubmit="return handleImportSubmit(this, 'sm_import_violations_csv')">
             <?php wp_nonce_field('sm_admin_action', 'sm_admin_nonce'); ?>
             <div class="sm-form-group">
                 <label class="sm-label">اختر ملف CSV للمخالفات:</label>
                 <input type="file" name="csv_file" accept=".csv" required>
+            </div>
+            <div id="import-loading" style="display:none; margin-bottom: 15px; padding: 10px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-weight: 700;">
+                <span class="dashicons dashicons-update spin" style="margin-left: 10px;"></span>
+                جاري استيراد البيانات... يرجى عدم إغلاق الصفحة.
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button type="submit" name="sm_import_violations_csv" class="sm-btn" style="width:auto; background:#27ae60;">استيراد السجلات الآن</button>
                 <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" class="sm-btn" style="width:auto; background:var(--sm-text-gray);">إلغاء</button>
             </div>
         </form>
+
+        <script>
+        function handleImportSubmit(form, btnName) {
+            const btn = form.querySelector('button[name="' + btnName + '"]');
+            const loader = form.querySelector('#import-loading');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerText = 'جاري المعالجة...';
+            if(loader) loader.style.display = 'block';
+
+            return true;
+        }
+        </script>
+
+        <style>
+        @keyframes spin { 100% { transform:rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+        </style>
     </div>
 
     <div id="edit-record-modal" class="sm-modal-overlay">

@@ -511,7 +511,7 @@ class SM_DB {
         $stats['by_class'] = $wpdb->get_results("SELECT s.class_name, COUNT(r.id) as count FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id $where GROUP BY s.class_name");
         
         if (!empty($filters['teacher_id'])) {
-            $stats['total_students'] = $wpdb->get_var($wpdb->prepare("SELECT COUNT(DISTINCT student_id) FROM {$wpdb->prefix}sm_records WHERE teacher_id = %d", $filters['teacher_id']));
+            $stats['total_students'] = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}sm_students WHERE teacher_id = %d", $filters['teacher_id']));
         } else {
             $stats['total_students'] = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sm_students");
         }
