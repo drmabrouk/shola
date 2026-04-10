@@ -84,10 +84,16 @@
         </div>
 
         <div class="sm-form-group">
-            <label class="sm-label">الإجراء المتخذ (اقتراحات ذكية):</label>
-            <input type="text" name="action_taken" id="action_taken" class="sm-input" placeholder="مثال: تنبيه شفوي، استدعاء ولي أمر...">
-            <div id="action-suggestions" style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
-                <!-- Suggestions based on severity -->
+            <label class="sm-label">الإجراء المتخذ (تدرج انضباطي إلزامي):</label>
+            <select name="action_taken" id="action_taken" class="sm-select" required>
+                <option value="">-- اختر الإجراء --</option>
+                <?php foreach (SM_Settings::get_disciplinary_actions() as $level => $act): ?>
+                    <option value="<?php echo esc_attr($act); ?>" data-level="<?php echo $level; ?>"><?php echo $level . '. ' . esc_html($act); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div id="action-progression-warning" style="display:none; margin-top:8px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:6px; font-size:12px; color:#c53030;">
+                <span class="dashicons dashicons-warning" style="font-size:14px; width:14px; height:14px; margin-left:5px;"></span>
+                تنبيه: هذا الطالب تلقى إجراءً سابقاً بنطاق مشابه أو أعلى. يرجى اتباع التدرج المنطقي.
             </div>
         </div>
 
@@ -131,7 +137,22 @@ function onViolationSelected() {
 
     const v = hViolations[degree][code];
     document.getElementById('violation_points').value = v.points;
-    document.getElementById('action_taken').value = v.action;
+
+    // Auto-select based on severity but allow structured override
+    const actionSelect = document.getElementById('action_taken');
+    if (actionSelect && v.action) {
+        // Find if v.action matches any of our structured levels
+        let found = false;
+        for (let i = 0; i < actionSelect.options.length; i++) {
+            if (actionSelect.options[i].value === v.action) {
+                actionSelect.selectedIndex = i;
+                found = true;
+                break;
+            }
+        }
+        // If not found in structured, maybe just set value if it's open (but it's a select now)
+    }
+
     document.getElementById('hidden_violation_type').value = v.name;
 
     // Auto severity
@@ -144,32 +165,6 @@ function onViolationSelected() {
 }
 
 (function() {
-<?php $suggested = SM_Settings::get_suggested_actions(); ?>
-const severityActions = {
-    'low': <?php echo json_encode(explode("\n", str_replace("\r", "", $suggested['low']))); ?>,
-    'medium': <?php echo json_encode(explode("\n", str_replace("\r", "", $suggested['medium']))); ?>,
-    'high': <?php echo json_encode(explode("\n", str_replace("\r", "", $suggested['high']))); ?>
-};
-
-window.updateSuggestions = function(sev) {
-    const container = document.getElementById('action-suggestions');
-    if (!container) return;
-    container.innerHTML = '';
-    if (severityActions[sev]) {
-        severityActions[sev].forEach(act => {
-            const btn = document.createElement('span');
-            btn.innerText = act;
-            btn.style = "cursor:pointer; background:#edf2f7; padding:4px 10px; border-radius:4px; font-size:12px; border:1px solid #cbd5e0;";
-            btn.onclick = () => {
-                const input = document.getElementById('action_taken');
-                if (input) input.value = act;
-            };
-            container.appendChild(btn);
-        });
-    }
-}
-
-updateSuggestions('low');
 
 let searchTimer;
 document.addEventListener('click', function(e) {
@@ -340,13 +335,58 @@ function fetchIntelligence(studentId) {
             });
             document.getElementById('intel-history').innerHTML = historyHtml;
 
+            // Handle Action Progression Logic
+            const actionSelect = document.getElementById('action_taken');
+            const warningBox = document.getElementById('action-progression-warning');
+
+            if (actionSelect) {
+                const nextIndex = data.last_action_index + 1;
+                const is_admin = data.is_admin;
+
+                for (let i = 0; i < actionSelect.options.length; i++) {
+                    const opt = actionSelect.options[i];
+                    const level = parseInt(opt.getAttribute('data-level') || 0);
+
+                    if (level > 0) {
+                        if (!is_admin) {
+                            // Non-admins MUST select the exact next level
+                            if (level !== nextIndex) {
+                                opt.disabled = true;
+                                if (level < nextIndex) {
+                                    opt.text = '(سابق) ' + opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+                                } else {
+                                    opt.text = '(تخطي) ' + opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+                                }
+                            } else {
+                                opt.disabled = false;
+                                opt.text = opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+                            }
+                        } else {
+                            // Admins can select any level
+                            opt.disabled = false;
+                            opt.text = opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+                        }
+                    }
+                }
+
+                // Auto-recommend next level
+                if (nextIndex <= 8) {
+                    for (let i = 0; i < actionSelect.options.length; i++) {
+                        if (parseInt(actionSelect.options[i].getAttribute('data-level')) === nextIndex) {
+                            actionSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (data.last_action_index > 0) warningBox.style.display = 'block';
+                else warningBox.style.display = 'none';
+            }
+
             // Smart Auto-select based on history
             if (data.stats.high_severity_count > 2) {
                 const sEl = document.getElementById('violation_severity');
-                if (sEl) {
-                    sEl.value = 'high';
-                    updateSuggestions('high');
-                }
+                if (sEl) sEl.value = 'high';
             }
         }
     });
