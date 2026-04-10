@@ -450,10 +450,20 @@ class SM_Public {
         $latest = array_slice($records, 0, 3); // Get 3 latest records
         $student = SM_DB::get_student_by_id($student_id);
 
+        $actions = SM_Settings::get_disciplinary_actions();
+        $last_action_index = 0;
+        if (!empty($stats['last_action'])) {
+            $last_action_index = array_search($stats['last_action'], $actions);
+            if ($last_action_index === false) $last_action_index = 0;
+        }
+
         wp_send_json_success(array(
             'stats' => $stats,
             'recent' => $latest,
             'labels' => SM_Settings::get_violation_types(),
+            'disciplinary_actions' => $actions,
+            'last_action_index' => (int)$last_action_index,
+            'is_admin' => current_user_can('manage_options') || current_user_can('إدارة_النظام'),
             'photo_url' => $student ? $student->photo_url : ''
         ));
     }
@@ -2108,14 +2118,16 @@ class SM_Public {
         if (isset($_POST['sm_import_csv']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
             if (current_user_can('إدارة_الطلاب') && !empty($_FILES['csv_file']['tmp_name'])) {
                 @set_time_limit(0);
+                @ignore_user_abort(true);
                 ini_set('auto_detect_line_endings', true);
 
                 $results = array(
-                    'total'   => 0,
-                    'success' => 0,
-                    'warning' => 0,
-                    'error'   => 0,
-                    'details' => array()
+                    'total'     => 0,
+                    'success'   => 0,
+                    'warning'   => 0,
+                    'error'     => 0,
+                    'duplicate' => 0,
+                    'details'   => array()
                 );
 
                 $handle = fopen($_FILES['csv_file']['tmp_name'], "r");
@@ -2237,7 +2249,7 @@ class SM_Public {
                         );
 
                         if ($existing_id) {
-                            // UPDATE EXISTING
+                            // DUPLICATE / UPDATE EXISTING
                             $update_data = array(
                                 'name' => $full_display_name,
                                 'class_name' => $class_name,
@@ -2249,6 +2261,8 @@ class SM_Public {
                             );
                             SM_DB::update_student($existing_id, $update_data);
                             $results['success']++;
+                            $results['duplicate']++;
+                            $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل موجود مسبقاً للطالب ($full_display_name) في السطر $row_index");
                         } else {
                             // INSERT NEW
                             $extra['sort_order'] = $next_sort_order++;

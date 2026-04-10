@@ -163,6 +163,19 @@ class SM_Settings {
         update_option('sm_suggested_actions', $actions);
     }
 
+    public static function get_disciplinary_actions() {
+        return array(
+            1 => 'تنبيه شفوي',
+            2 => 'إنذار خطي',
+            3 => 'إخطار رسمي',
+            4 => 'استدعاء ولي أمر',
+            5 => 'تعهد ولي أمر',
+            6 => 'حسم من درجات السلوك',
+            7 => 'فصل مؤقت',
+            8 => 'فصل نهائي'
+        );
+    }
+
     public static function get_hierarchical_violations() {
         $default = array(
             1 => array(

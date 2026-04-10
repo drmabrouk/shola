@@ -14,18 +14,22 @@ if ($import_results) {
                 <span style="font-size: 12px; color: #718096;">إجمالي السجلات المعالجة: <?php echo $import_results['total']; ?></span>
             </div>
             <div style="padding: 25px;">
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
                     <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 1px solid #c6f6d5; text-align: center;">
-                        <div style="font-size: 20px; font-weight: 800; color: #2f855a;"><?php echo $import_results['success']; ?></div>
-                        <div style="font-size: 12px; color: #38a169;">تم الاستيراد بنجاح</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #2f855a;"><?php echo $import_results['success'] - ($import_results['duplicate'] ?? 0); ?></div>
+                        <div style="font-size: 12px; color: #38a169;">سجلات جديدة</div>
+                    </div>
+                    <div style="background: #ebf8ff; padding: 15px; border-radius: 8px; border: 1px solid #bee3f8; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 800; color: #2b6cb0;"><?php echo $import_results['duplicate'] ?? 0; ?></div>
+                        <div style="font-size: 12px; color: #3182ce;">سجلات مكررة (تم التحديث)</div>
                     </div>
                     <div style="background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px solid #feebc8; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #c05621;"><?php echo $import_results['warning']; ?></div>
-                        <div style="font-size: 12px; color: #dd6b20;">تنبيهات (بيانات ناقصة)</div>
+                        <div style="font-size: 12px; color: #dd6b20;">تنبيهات الهيكل</div>
                     </div>
                     <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #fed7d7; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #c53030;"><?php echo $import_results['error']; ?></div>
-                        <div style="font-size: 12px; color: #e53e3e;">أخطاء (فشل الاستيراد)</div>
+                        <div style="font-size: 12px; color: #e53e3e;">أخطاء البيانات</div>
                     </div>
                 </div>
 
@@ -44,6 +48,8 @@ if ($import_results) {
                                         <td style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0;">
                                             <?php if ($detail['type'] == 'error'): ?>
                                                 <span style="color: #e53e3e; font-weight: 700;">خطأ</span>
+                                            <?php elseif ($detail['type'] == 'info'): ?>
+                                                <span style="color: #3182ce; font-weight: 700;">تكرار</span>
                                             <?php else: ?>
                                                 <span style="color: #dd6b20; font-weight: 700;">تنبيه</span>
                                             <?php endif; ?>

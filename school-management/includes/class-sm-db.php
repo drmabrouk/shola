@@ -504,6 +504,9 @@ class SM_DB {
         if (!empty($filters['teacher_id'])) {
             $where .= $wpdb->prepare(" AND r.teacher_id = %d", $filters['teacher_id']);
         }
+        if (!empty($filters['student_id'])) {
+            $where .= $wpdb->prepare(" AND r.student_id = %d", $filters['student_id']);
+        }
 
         $stats['by_type'] = $wpdb->get_results("SELECT type, COUNT(*) as count FROM {$wpdb->prefix}sm_records r $where GROUP BY type");
         $stats['by_severity'] = $wpdb->get_results("SELECT severity, COUNT(*) as count FROM {$wpdb->prefix}sm_records r $where GROUP BY severity");
