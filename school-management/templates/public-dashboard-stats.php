@@ -293,7 +293,8 @@
                     $type_labels = SM_Settings::get_violation_types();
                     $severity_labels = SM_Settings::get_severities();
                     foreach ($records as $row):
-                        $waMsg = rawurlencode("تنبيه من المدرسة بخصوص الطالب: {$row->student_name}\nنوع المخالفة: {$row->type}\nالتاريخ: ".date('Y-m-d', strtotime($row->created_at))."\nالتفاصيل: {$row->details}");
+                        $waMsg = rawurlencode("تنبيه من المدرسة بخصوص الطالب: {$row->student_name}\nنوع المخالفة: {$row->type}\nالإجراء المتخذ: {$row->action_taken}\nالتاريخ والوقت: ".date('Y-m-d H:i', strtotime($row->created_at)));
+                        $phone = !empty($row->guardian_phone) ? preg_replace('/[^0-9]/', '', $row->guardian_phone) : '';
                     ?>
                         <tr id="record-row-<?php echo $row->id; ?>">
                             <td>
@@ -320,7 +321,12 @@
                                         <button onclick="editSmRecord(<?php echo htmlspecialchars(json_encode($row)); ?>)" class="sm-btn sm-btn-outline" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" title="تعديل"><span class="dashicons dashicons-edit" style="margin:0;"></span></button>
                                         <button onclick="confirmDeleteRecord(<?php echo $row->id; ?>)" class="sm-btn sm-btn-outline" style="width: 32px; height: 32px; padding: 0; color:#e53e3e; display: flex; align-items: center; justify-content: center;" title="حذف"><span class="dashicons dashicons-trash" style="margin:0;"></span></button>
                                     <?php endif; ?>
-                                    <a href="https://wa.me/?text=<?php echo $waMsg; ?>" target="_blank" class="sm-btn sm-btn-outline" style="width: 32px; height: 32px; padding: 0; color:#38a169; display: flex; align-items: center; justify-content: center;" title="واتساب"><span class="dashicons dashicons-whatsapp" style="margin:0;"></span></a>
+
+                                    <?php if ($phone): ?>
+                                        <a href="https://wa.me/<?php echo $phone; ?>?text=<?php echo $waMsg; ?>" target="_blank" class="sm-btn sm-btn-outline" style="width: 32px; height: 32px; padding: 0; color:#38a169; display: flex; align-items: center; justify-content: center;" title="واتساب"><span class="dashicons dashicons-whatsapp" style="margin:0;"></span></a>
+                                    <?php else: ?>
+                                        <button onclick="alert('رقم هاتف ولي الأمر غير مسجل في سجل الطالب')" class="sm-btn sm-btn-outline" style="width: 32px; height: 32px; padding: 0; color:#cbd5e0; display: flex; align-items: center; justify-content: center;" title="واتساب (رقم مفقود)"><span class="dashicons dashicons-whatsapp" style="margin:0;"></span></button>
+                                    <?php endif; ?>
                                 </div>
                                 <?php if ($row->status === 'pending' && current_user_can('إدارة_المخالفات')): ?>
                                     <div style="margin-top: 8px; display: flex; gap: 5px; justify-content: flex-end;">

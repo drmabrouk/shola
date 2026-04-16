@@ -281,7 +281,7 @@ class SM_DB {
 
     public static function get_records($filters = array()) {
         global $wpdb;
-        $query = "SELECT r.*, s.name as student_name, s.class_name, s.section FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id WHERE 1=1";
+        $query = "SELECT r.*, s.name as student_name, s.class_name, s.section, s.guardian_phone FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id WHERE 1=1";
         
         if (!empty($filters['student_id'])) {
             $query .= $wpdb->prepare(" AND r.student_id = %d", $filters['student_id']);
