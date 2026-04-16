@@ -89,8 +89,11 @@
                     </div>
 
                     <div style="flex: 1; display: flex; gap: 12px; justify-content: flex-end;">
-                        <?php $parent_phone = get_user_meta($parent->ID, 'sm_phone', true); ?>
-                        <button onclick="requestCallIn(<?php echo $parent->ID; ?>, '<?php echo esc_js($parent->display_name); ?>', '<?php echo esc_js($parent->user_email); ?>', '<?php echo esc_js($parent_phone); ?>')" class="sm-btn" style="background: #F8FAFC; color: #3182CE !important; border: 1px solid #BEE3F8; padding: 6px 15px; font-size: 11px; width: auto; font-weight: 800; box-shadow: none;">
+                        <?php
+                            $parent_phone = get_user_meta($parent->ID, 'sm_phone', true);
+                            $formatted_phone = SM_Settings::format_uae_phone($parent_phone);
+                        ?>
+                        <button onclick="requestCallIn(<?php echo $parent->ID; ?>, '<?php echo esc_js($parent->display_name); ?>', '<?php echo esc_js($parent->user_email); ?>', '<?php echo esc_js($formatted_phone ?: ''); ?>')" class="sm-btn" style="background: #F8FAFC; color: #3182CE !important; border: 1px solid #BEE3F8; padding: 6px 15px; font-size: 11px; width: auto; font-weight: 800; box-shadow: none;">
                             <span class="dashicons dashicons-calendar-alt" style="font-size:14px; margin-left:5px;"></span> طلب استدعاء
                         </button>
                         <form method="post" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف حساب ولي الأمر بالكامل؟')">
@@ -199,7 +202,7 @@
         const msg = encodeURIComponent(document.getElementById('call_in_msg_text').value);
         const phone = currentParentData.phone || '';
         if (!phone) {
-            alert('رقم الهاتف غير مسجل لهذا الوالد.');
+            alert('رقم الهاتف غير مسجل لهذا الوالد أو صيغته غير صحيحة (يجب أن يكون رقماً إماراتياً).');
             return;
         }
         window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
