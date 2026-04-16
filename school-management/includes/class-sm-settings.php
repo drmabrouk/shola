@@ -318,4 +318,32 @@ class SM_Settings {
     public static function save_sidebar_visibility($data) {
         update_option('sm_sidebar_visibility', $data);
     }
+
+    /**
+     * Enforce UAE Phone Format (+971)
+     */
+    public static function format_uae_phone($phone) {
+        if (empty($phone)) return false;
+
+        // 1. Strip all non-digits
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        // 2. Handle 050... -> 97150... (0 + 9 digits)
+        if (strlen($digits) == 10 && strpos($digits, '0') === 0) {
+            $digits = '971' . substr($digits, 1);
+        }
+        // 3. Handle 50... -> 97150... (9 digits)
+        elseif (strlen($digits) == 9) {
+            $digits = '971' . $digits;
+        }
+        // 4. Handle 97150... -> 97150... (12 digits)
+        // Already handled if it was 12 digits.
+
+        // Final Validation: Exactly 12 digits starting with 971
+        if (strlen($digits) == 12 && strpos($digits, '971') === 0) {
+            return $digits;
+        }
+
+        return false;
+    }
 }
