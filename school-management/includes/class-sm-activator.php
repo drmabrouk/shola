@@ -24,6 +24,7 @@ class SM_Activator {
             parent_user_id bigint(20) DEFAULT NULL,
             teacher_id bigint(20) DEFAULT NULL,
             photo_url varchar(255) DEFAULT '',
+            national_id varchar(50) DEFAULT NULL,
             sort_order int(11) DEFAULT 0,
             behavior_points int(11) DEFAULT 0,
             case_file_active tinyint(1) DEFAULT 0,

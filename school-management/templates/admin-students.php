@@ -146,6 +146,10 @@ if ($import_results) {
                     <div style="font-size: 11px; color: #64748b;">العمود F</div>
                     <div style="font-weight: 800;">هاتف ولي الأمر</div>
                 </div>
+                <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b;">العمود G</div>
+                    <div style="font-weight: 800;">رقم الهوية (ID)</div>
+                </div>
             </div>
             <p style="font-size:12px; color:#718096; line-height: 1.6;">يرجى التأكد من أن ملف الإكسل يحتوي على كافة سجلات الطلاب وأن البيانات مرتبة بدقة في الأعمدة المذكورة أعلاه (A, B, C) لضمان نجاح عملية الاستيراد.</p>
         </div>

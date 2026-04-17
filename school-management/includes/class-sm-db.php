@@ -144,6 +144,7 @@ class SM_DB {
                 'parent_email' => $email,
                 'guardian_phone' => sanitize_text_field($extra['guardian_phone'] ?? ''),
                 'nationality' => sanitize_text_field($extra['nationality'] ?? ''),
+                'national_id' => sanitize_text_field($extra['national_id'] ?? ''),
                 'registration_date' => !empty($extra['registration_date']) ? sanitize_text_field($extra['registration_date']) : current_time('mysql', 1),
                 'student_code' => $code,
                 'parent_user_id' => $parent_user_id,
@@ -165,6 +166,7 @@ class SM_DB {
         if (isset($data['parent_email'])) $update_data['parent_email'] = sanitize_email($data['parent_email']);
         if (isset($data['guardian_phone'])) $update_data['guardian_phone'] = sanitize_text_field($data['guardian_phone']);
         if (isset($data['nationality'])) $update_data['nationality'] = sanitize_text_field($data['nationality']);
+        if (isset($data['national_id'])) $update_data['national_id'] = sanitize_text_field($data['national_id']);
         if (isset($data['registration_date'])) $update_data['registration_date'] = sanitize_text_field($data['registration_date']);
         if (isset($data['student_code'])) $update_data['student_code'] = sanitize_text_field($data['student_code']);
 
@@ -1143,7 +1145,7 @@ class SM_DB {
     private static function sync_attendance_to_violations($student_id, $status, $date) {
         global $wpdb;
         $violation_type = 'absence';
-        $details = "Absent on $date";
+        $details = "غائب في $date";
 
         if ($status === 'absent') {
             // Check if violation already exists for this absence
