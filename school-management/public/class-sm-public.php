@@ -2066,7 +2066,7 @@ class SM_Public {
         if (isset($_POST['sm_save_sidebar_visibility']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
             if (current_user_can('إدارة_النظام')) {
                 $roles_to_process = array('sm_system_admin', 'sm_principal', 'sm_supervisor', 'sm_coordinator', 'sm_teacher', 'sm_student', 'sm_parent');
-                $sections_to_process = array('stats', 'students', 'teachers', 'parents', 'grades', 'teacher-reports', 'confiscated', 'printing', 'surveys', 'timetables', 'attendance', 'lesson-plans', 'assignments', 'clinic', 'messaging', 'events');
+                $sections_to_process = array('stats', 'students', 'teachers', 'parents', 'grades', 'teacher-reports', 'confiscated', 'printing', 'surveys', 'timetables', 'attendance', 'lesson-plans', 'assignments', 'clinic', 'messaging');
 
                 $visibility = array();
                 $input = isset($_POST['sidebar_visibility']) ? $_POST['sidebar_visibility'] : array();
@@ -2222,6 +2222,7 @@ class SM_Public {
                     $nationality       = isset($data[3]) ? trim($data[3]) : '';
                     $guardian_email    = isset($data[4]) ? trim($data[4]) : '';
                     $guardian_phone    = isset($data[5]) ? trim($data[5]) : '';
+                    $national_id       = isset($data[6]) ? trim($data[6]) : null;
 
                     if (empty($full_display_name)) {
                         $errors[] = "الاسم الكامل مفقود في السطر " . $row_index;
@@ -2245,7 +2246,8 @@ class SM_Public {
 
                         $extra = array(
                             'guardian_phone' => $guardian_phone,
-                            'nationality' => $nationality
+                            'nationality' => $nationality,
+                            'national_id' => $national_id
                         );
 
                         if ($existing_id) {
@@ -2257,6 +2259,7 @@ class SM_Public {
                                 'parent_email' => $guardian_email,
                                 'guardian_phone' => $guardian_phone,
                                 'nationality' => $nationality,
+                                'national_id' => $national_id,
                                 'student_code' => SM_DB::get_student_by_id($existing_id)->student_code // Keep same code
                             );
                             SM_DB::update_student($existing_id, $update_data);

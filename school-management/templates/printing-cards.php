@@ -99,7 +99,7 @@
                     <button onclick="printAttendanceSheets()" class="sm-btn" style="background: #3182CE; font-size: 12px;">طباعة الكشوف</button>
                 </div>
 
-                <!-- Most Absent Students (Term) -->
+                <!-- الأكثر غياباً (الفصل) -->
                 <div style="background: #fff; padding: 25px; border-radius: 15px; border: 1px solid var(--sm-border-color); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--sm-shadow);">
                     <div>
                         <div style="width: 50px; height: 50px; background: #111F35; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #fff;">
