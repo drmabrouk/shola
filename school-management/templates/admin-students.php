@@ -154,40 +154,126 @@ if ($import_results) {
             <p style="font-size:12px; color:#718096; line-height: 1.6;">يرجى التأكد من أن ملف الإكسل يحتوي على كافة سجلات الطلاب وأن البيانات مرتبة بدقة في الأعمدة المذكورة أعلاه (A, B, C) لضمان نجاح عملية الاستيراد.</p>
         </div>
 
-        <form method="post" enctype="multipart/form-data" onsubmit="return handleImportSubmit(this)">
-            <?php wp_nonce_field('sm_admin_action', 'sm_admin_nonce'); ?>
+        <form id="sm-import-form-ajax" enctype="multipart/form-data">
             <div class="sm-form-group">
                 <label class="sm-label">اختر ملف CSV للملفات:</label>
-                <input type="file" name="csv_file" accept=".csv" required>
+                <input type="file" id="import_csv_file" accept=".csv" required>
             </div>
-            <div id="import-loading" style="display:none; margin-bottom: 15px; padding: 10px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-weight: 700;">
-                <span class="dashicons dashicons-update spin" style="margin-left: 10px;"></span>
-                جاري استيراد البيانات... يرجى عدم إغلاق الصفحة.
+
+            <div id="import-progress-container" style="display:none; margin-top:20px; background:#fff; padding:20px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:700;">
+                    <span id="import-status-text" style="color:var(--sm-primary-color);">جاري تحضير البيانات...</span>
+                    <span id="import-percentage">0%</span>
+                </div>
+                <div style="width:100%; height:12px; background:#edf2f7; border-radius:10px; overflow:hidden;">
+                    <div id="import-progress-bar" style="width:0%; height:100%; background:var(--sm-primary-color); transition: width 0.3s ease;"></div>
+                </div>
+                <div id="import-row-stats" style="margin-top:10px; font-size:11px; color:#718096;">
+                    معالجة السطر <span id="current-row-num">0</span> من <span id="total-rows-num">0</span>
+                </div>
             </div>
+
             <div style="display:flex; gap:10px; margin-top:20px;">
-                <button type="submit" name="sm_import_csv" class="sm-btn" style="width:auto; background:#27ae60;">بدء عملية الاستيراد</button>
+                <button type="button" id="start-import-btn" class="sm-btn" style="width:auto; background:#27ae60;">بدء عملية الاستيراد</button>
                 <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" class="sm-btn" style="width:auto; background:var(--sm-text-gray);">إلغاء</button>
             </div>
         </form>
 
         <script>
-        function handleImportSubmit(form) {
-            const btn = form.querySelector('button[name="sm_import_csv"]');
-            const loader = document.getElementById('import-loading');
+        (function() {
+            const startBtn = document.getElementById('start-import-btn');
+            const fileInput = document.getElementById('import_csv_file');
+            const progressContainer = document.getElementById('import-progress-container');
+            const progressBar = document.getElementById('import-progress-bar');
+            const statusText = document.getElementById('import-status-text');
+            const percentageText = document.getElementById('import-percentage');
+            const currentRowNum = document.getElementById('current-row-num');
+            const totalRowsNum = document.getElementById('total-rows-num');
 
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.innerText = 'جاري المعالجة...';
-            loader.style.display = 'block';
+            let isImporting = false;
+            window.addEventListener('beforeunload', function(e) {
+                if (isImporting) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
 
-            return true;
-        }
+            startBtn.onclick = function() {
+                if (!fileInput.files[0]) {
+                    alert('يرجى اختيار ملف أولاً');
+                    return;
+                }
+
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+                fileInput.disabled = true;
+                progressContainer.style.display = 'block';
+                isImporting = true;
+
+                // Stage 1: Upload
+                const formData = new FormData();
+                formData.append('action', 'sm_upload_import_csv');
+                formData.append('csv_file', fileInput.files[0]);
+                formData.append('nonce', '<?php echo wp_create_nonce("sm_admin_action"); ?>');
+
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        totalRowsNum.innerText = res.data.total;
+                        processChunk(res.data.file_path, 0, res.data.total);
+                    } else {
+                        alert('خطأ أثناء الرفع: ' + res.data);
+                        resetUI();
+                    }
+                });
+            };
+
+            function processChunk(filePath, offset, total) {
+                statusText.innerText = 'جاري استيراد البيانات...';
+
+                const formData = new FormData();
+                formData.append('action', 'sm_process_import_chunk');
+                formData.append('file_path', filePath);
+                formData.append('offset', offset);
+                formData.append('nonce', '<?php echo wp_create_nonce("sm_admin_action"); ?>');
+
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        const newOffset = res.data.total_so_far;
+                        const percentage = Math.min(100, Math.round((newOffset / total) * 100));
+
+                        progressBar.style.width = percentage + '%';
+                        percentageText.innerText = percentage + '%';
+                        currentRowNum.innerText = newOffset;
+
+                        if (res.data.finished) {
+                            statusText.innerText = 'اكتمل الاستيراد بنجاح!';
+                            isImporting = false;
+                            setTimeout(() => {
+                                window.location.href = window.location.pathname + '?page=sm-dashboard&sm_tab=students&sm_admin_msg=import_completed';
+                            }, 1000);
+                        } else {
+                            processChunk(filePath, newOffset, total);
+                        }
+                    } else {
+                        alert('خطأ أثناء المعالجة: ' + res.data);
+                        resetUI();
+                    }
+                });
+            }
+
+            function resetUI() {
+                isImporting = false;
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+                fileInput.disabled = false;
+                progressContainer.style.display = 'none';
+            }
+        })();
         </script>
-
-        <style>
-        @keyframes spin { 100% { transform:rotate(360deg); } }
-        .spin { animation: spin 1s linear infinite; }
-        </style>
     </div>
     
     <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #f8fafc; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
