@@ -503,12 +503,6 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                     </li>
                 <?php endif; ?>
 
-                <?php if (($is_wp_admin || !empty($my_visibility['events']))): ?>
-                    <li class="sm-sidebar-item <?php echo $active_tab == 'events' ? 'sm-active' : ''; ?>">
-                        <a href="<?php echo add_query_arg('sm_tab', 'events'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-calendar-alt"></span> الفعاليات والإجازات</a>
-                    </li>
-                <?php endif; ?>
-
                 <?php if ($is_admin || $is_sys_admin): ?>
                     <li class="sm-sidebar-item <?php echo $active_tab == 'global-settings' ? 'sm-active' : ''; ?>">
                         <a href="<?php echo add_query_arg('sm_tab', 'global-settings'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-admin-generic"></span> إعدادات النظام</a>
@@ -582,10 +576,6 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
 
                 case 'attendance':
                     include SM_PLUGIN_DIR . 'templates/admin-attendance.php';
-                    break;
-
-                case 'events':
-                    include SM_PLUGIN_DIR . 'templates/admin-events.php';
                     break;
 
                 case 'lesson-plans':
@@ -829,8 +819,7 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                                     'lesson-plans' => 'تحضير الدروس',
                                     'assignments' => 'الواجبات المدرسية',
                                     'clinic' => 'العيادة المدرسية',
-                                    'messaging' => 'مركز المراسلة',
-                                    'events' => 'الفعاليات والإجازات'
+                                    'messaging' => 'مركز المراسلة'
                                 );
                                 ?>
                                 <h4 style="margin-top:0;">تخصيص ظهور أقسام القائمة الجانبية حسب الرتب</h4>

@@ -348,7 +348,16 @@ class SM_DB {
         $record = self::get_record_by_id($id);
         if ($record) {
             SM_Logger::log('حذف مخالفة', 'ROLLBACK_DATA:' . json_encode(array('table' => 'records', 'data' => $record)));
-            return $wpdb->delete("{$wpdb->prefix}sm_records", array('id' => $id));
+
+            $deleted = $wpdb->delete("{$wpdb->prefix}sm_records", array('id' => $id));
+            if ($deleted && $record->status === 'accepted') {
+                // Synchronize points: deduct the points of the deleted violation
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}sm_students SET behavior_points = GREATEST(0, behavior_points - %d) WHERE id = %d",
+                    $record->points, $record->student_id
+                ));
+            }
+            return $deleted;
         }
         return false;
     }
@@ -535,6 +544,18 @@ class SM_DB {
         $stats['violations_week'] = $summary_counts->violations_week;
         $stats['violations_month'] = $summary_counts->violations_month;
         $stats['total_actions'] = $summary_counts->total_actions;
+
+        // Today's Attendance Stats
+        $today = current_time('Y-m-d');
+        $attendance_counts = $wpdb->get_row($wpdb->prepare("
+            SELECT
+                COUNT(CASE WHEN status = 'present' THEN 1 END) as present_today,
+                COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent_today
+            FROM {$wpdb->prefix}sm_attendance WHERE date = %s
+        ", $today));
+
+        $stats['present_today'] = (int)$attendance_counts->present_today;
+        $stats['absent_today']  = (int)$attendance_counts->absent_today;
 
         $stats['top_students'] = $wpdb->get_results("
             SELECT s.name, COUNT(r.id) as count 
@@ -1091,13 +1112,13 @@ class SM_DB {
         ));
 
         if ($exists) {
-            return $wpdb->update(
+            $updated = $wpdb->update(
                 "{$wpdb->prefix}sm_attendance",
                 array('status' => $status, 'teacher_id' => $teacher_id),
                 array('id' => $exists)
             );
         } else {
-            return $wpdb->insert(
+            $updated = $wpdb->insert(
                 "{$wpdb->prefix}sm_attendance",
                 array(
                     'student_id' => $student_id,
@@ -1106,6 +1127,48 @@ class SM_DB {
                     'teacher_id' => $teacher_id
                 )
             );
+        }
+
+        if ($updated !== false) {
+            self::sync_attendance_to_violations($student_id, $status, $date);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Centralized System: Sync Attendance status to Violation Records
+     */
+    private static function sync_attendance_to_violations($student_id, $status, $date) {
+        global $wpdb;
+        $violation_type = 'absence';
+        $details = "Absent on $date";
+
+        if ($status === 'absent') {
+            // Check if violation already exists for this absence
+            $existing = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}sm_records WHERE student_id = %d AND type = %s AND details = %s",
+                $student_id, $violation_type, $details
+            ));
+
+            if (!$existing) {
+                self::add_record(array(
+                    'student_id'   => $student_id,
+                    'type'         => $violation_type,
+                    'severity'     => 'low',
+                    'degree'       => 1,
+                    'details'      => $details,
+                    'action_taken' => 'تسجيل تلقائي للغياب',
+                    'custom_date'  => $date
+                ), true);
+            }
+        } else {
+            // If status is NOT absent, remove any auto-generated absence violation for this date
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM {$wpdb->prefix}sm_records WHERE student_id = %d AND type = %s AND details = %s",
+                $student_id, $violation_type, $details
+            ));
         }
     }
 
