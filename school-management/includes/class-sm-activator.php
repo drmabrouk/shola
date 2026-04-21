@@ -31,7 +31,8 @@ class SM_Activator {
             PRIMARY KEY  (id),
             KEY student_code (student_code),
             KEY teacher_id (teacher_id),
-            KEY sort_order (sort_order)
+            KEY sort_order (sort_order),
+            UNIQUE KEY national_id (national_id)
         ) $charset_collate;
 
         CREATE TABLE $table_records (
@@ -185,6 +186,16 @@ class SM_Activator {
             teacher_id bigint(20) NOT NULL,
             PRIMARY KEY  (id),
             KEY class_section (class_name, section)
+        ) $charset_collate;
+
+        CREATE TABLE {$wpdb->prefix}sm_student_meta (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            student_id bigint(20) NOT NULL,
+            meta_key varchar(255) NOT NULL,
+            meta_value longtext,
+            PRIMARY KEY  (id),
+            KEY student_id (student_id),
+            KEY meta_key (meta_key)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

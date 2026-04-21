@@ -2306,7 +2306,7 @@ class SM_Public {
                     }
                 }
 
-                $existing_id = SM_DB::student_exists($name, $class_name, $section);
+                $existing_id = SM_DB::student_exists($name, $class_name, $section, $national_id);
                 $extra = array(
                     'guardian_phone' => $phone,
                     'nationality' => $nationality,
@@ -2329,8 +2329,11 @@ class SM_Public {
                     $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل ($name) في السطر $row_index");
                 } else {
                     $extra['sort_order'] = $next_sort_order++;
-                    $imported_id = SM_DB::add_student($name, $class_name, $email, '', null, null, $section, $extra);
+                    $imported_id = SM_DB::add_student($name, $class_name, $email, ($national_id ?: ''), null, null, $section, $extra);
                     if ($imported_id) {
+                        if (empty($national_id)) {
+                            SM_DB::update_student_meta($imported_id, 'sm_incomplete_identity', '1');
+                        }
                         $results['success']++;
                         foreach ($warnings as $warn) $results['details'][] = array('type' => 'warning', 'msg' => $warn);
                     } else {

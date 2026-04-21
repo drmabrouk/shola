@@ -44,9 +44,9 @@ class SM_DB {
             $name_sql = self::get_arabic_normalized_column('name');
 
             if (preg_match('/^ST[0-9]+$/i', $search_str)) {
-                $query .= $wpdb->prepare(" AND (student_code = %s OR $name_sql LIKE %s)", $search_str, $search_like);
+                $query .= $wpdb->prepare(" AND (student_code = %s OR $name_sql LIKE %s OR national_id = %s)", $search_str, $search_like, $search_str);
             } else {
-                $query .= $wpdb->prepare(" AND ($name_sql LIKE %s OR student_code LIKE %s OR class_name LIKE %s OR section LIKE %s)", $search_like, $search_like, $search_like, $search_like);
+                $query .= $wpdb->prepare(" AND ($name_sql LIKE %s OR student_code LIKE %s OR national_id LIKE %s OR guardian_phone LIKE %s OR class_name LIKE %s OR section LIKE %s)", $search_like, $search_like, $search_like, $search_like, $search_like, $search_like);
             }
         }
         
@@ -78,8 +78,19 @@ class SM_DB {
         return intval($max) + 1;
     }
 
-    public static function student_exists($name, $class, $section) {
+    public static function student_exists($name, $class, $section, $national_id = null) {
         global $wpdb;
+
+        // 1. Prioritize check by National ID
+        if (!empty($national_id)) {
+            $id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}sm_students WHERE national_id = %s",
+                $national_id
+            ));
+            if ($id) return $id;
+        }
+
+        // 2. Fallback to Name + Class + Section
         $id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}sm_students WHERE name = %s AND class_name = %s AND section = %s",
             $name, $class, $section
@@ -166,7 +177,13 @@ class SM_DB {
         if (isset($data['parent_email'])) $update_data['parent_email'] = sanitize_email($data['parent_email']);
         if (isset($data['guardian_phone'])) $update_data['guardian_phone'] = sanitize_text_field($data['guardian_phone']);
         if (isset($data['nationality'])) $update_data['nationality'] = sanitize_text_field($data['nationality']);
-        if (isset($data['national_id'])) $update_data['national_id'] = sanitize_text_field($data['national_id']);
+
+        // Prevent modification of national_id after creation
+        $existing = self::get_student_by_id($id);
+        if (isset($data['national_id']) && (empty($existing->national_id) || $existing->national_id === $data['national_id'])) {
+            $update_data['national_id'] = sanitize_text_field($data['national_id']);
+        }
+
         if (isset($data['registration_date'])) $update_data['registration_date'] = sanitize_text_field($data['registration_date']);
         if (isset($data['student_code'])) $update_data['student_code'] = sanitize_text_field($data['student_code']);
 
@@ -1172,6 +1189,28 @@ class SM_DB {
                 $student_id, $violation_type, $details
             ));
         }
+    }
+
+    // Student Metadata
+    public static function update_student_meta($student_id, $key, $value) {
+        global $wpdb;
+        $table = "{$wpdb->prefix}sm_student_meta";
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE student_id = %d AND meta_key = %s", $student_id, $key));
+
+        if ($exists) {
+            return $wpdb->update($table, array('meta_value' => $value), array('id' => $exists));
+        } else {
+            return $wpdb->insert($table, array('student_id' => $student_id, 'meta_key' => $key, 'meta_value' => $value));
+        }
+    }
+
+    public static function get_student_meta($student_id, $key, $single = true) {
+        global $wpdb;
+        $table = "{$wpdb->prefix}sm_student_meta";
+        if ($single) {
+            return $wpdb->get_var($wpdb->prepare("SELECT meta_value FROM $table WHERE student_id = %d AND meta_key = %s", $student_id, $key));
+        }
+        return $wpdb->get_col($wpdb->prepare("SELECT meta_value FROM $table WHERE student_id = %d AND meta_key = %s", $student_id, $key));
     }
 
     // Filtered Logs
