@@ -2114,182 +2114,6 @@ class SM_Public {
             }
         }
 
-        // Handle CSV Upload (Students) - Configured for Excel Column Mapping (J, K, L) with Validation & Partial Support
-        if (isset($_POST['sm_import_csv']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
-            if (current_user_can('إدارة_الطلاب') && !empty($_FILES['csv_file']['tmp_name'])) {
-                @set_time_limit(0);
-                @ignore_user_abort(true);
-                ini_set('auto_detect_line_endings', true);
-
-                $results = array(
-                    'total'     => 0,
-                    'success'   => 0,
-                    'warning'   => 0,
-                    'error'     => 0,
-                    'duplicate' => 0,
-                    'details'   => array()
-                );
-
-                $handle = fopen($_FILES['csv_file']['tmp_name'], "r");
-
-                // Detection & Skip BOM
-                $bom = fread($handle, 3);
-                if ($bom != "\xEF\xBB\xBF") {
-                    rewind($handle);
-                }
-
-                // Detect delimiter
-                $first_line = fgets($handle);
-                rewind($handle);
-                $bom = fread($handle, 3);
-                if ($bom != "\xEF\xBB\xBF") rewind($handle);
-
-                $delimiters = [',', ';', "\t", '|'];
-                $delimiter = ',';
-                $max_count = -1;
-                foreach ($delimiters as $d) {
-                    $count = substr_count($first_line, $d);
-                    if ($count > $max_count) {
-                        $max_count = $count;
-                        $delimiter = $d;
-                    }
-                }
-
-                // Skip Header
-                fgetcsv($handle, 0, $delimiter);
-
-                $rows = array();
-                $row_index = 2;
-                while (($data = fgetcsv($handle, 0, $delimiter)) !== FALSE) {
-                    $rows[] = array('data' => $data, 'index' => $row_index++);
-                }
-                fclose($handle);
-
-                $next_sort_order = SM_DB::get_next_sort_order();
-
-                foreach ($rows as $row_obj) {
-                    $data = $row_obj['data'];
-                    $row_index = $row_obj['index'];
-                    $results['total']++;
-
-                    $errors = array();
-                    $warnings = array();
-
-                    // Attempt encoding conversion for Arabic (handles mixed encodings)
-                    foreach ($data as $k => $v) {
-                        $encoding = mb_detect_encoding($v, array('UTF-8', 'ISO-8859-6', 'ISO-8859-1'), true);
-                        if ($encoding && $encoding != 'UTF-8') {
-                            $data[$k] = mb_convert_encoding($v, 'UTF-8', $encoding);
-                        }
-                    }
-
-                    // Mapping based on User Request (Excel Configuration):
-                    // Column A (0): Full Name
-                    // Column B (1): Grade / Class
-                    // Column C (2): Section
-                    // Column D (3): Student Nationality
-                    // Column E (4): Guardian Email
-                    // Column F (5): Guardian Phone Number
-
-                    $full_display_name = isset($data[0]) ? trim($data[0]) : '';
-                    $class_name        = isset($data[1]) ? trim($data[1]) : '';
-                    $section           = isset($data[2]) ? trim($data[2]) : '';
-
-                    $academic = SM_Settings::get_academic_structure();
-
-                    // Normalize Grade format (e.g., "12" or "Grade 12" -> "الصف 12")
-                    if (!empty($class_name)) {
-                        $grade_number = preg_replace('/[^0-9]/', '', $class_name);
-                        if (!empty($grade_number)) {
-                            $class_name = 'الصف ' . $grade_number;
-                            $grade_val = (int)$grade_number;
-
-                            // Validate Grade against active grades
-                            if (!in_array($grade_val, $academic['active_grades'])) {
-                                $warnings[] = "الصف ($grade_number) غير مفعل في إعدادات الهيكل المدرسي.";
-                            }
-
-                            // Validate Section
-                            if (!empty($section)) {
-                                $gs = $academic['grade_sections'][$grade_val] ?? array('count' => $academic['sections_count'], 'letters' => $academic['section_letters']);
-                                $allowed_letters = array_map('trim', explode(',', $gs['letters']));
-                                if (!in_array($section, $allowed_letters)) {
-                                    $warnings[] = "الشعبة ($section) غير معرفة للصف ($grade_number).";
-                                }
-                            }
-                        }
-                    }
-                    $nationality       = isset($data[3]) ? trim($data[3]) : '';
-                    $guardian_email    = isset($data[4]) ? trim($data[4]) : '';
-                    $guardian_phone    = isset($data[5]) ? trim($data[5]) : '';
-                    $national_id       = isset($data[6]) ? trim($data[6]) : null;
-
-                    if (empty($full_display_name)) {
-                        $errors[] = "الاسم الكامل مفقود في السطر " . $row_index;
-                    }
-
-                    if (empty($class_name)) {
-                        $errors[] = "الصف الدراسي مفقود في السطر " . $row_index;
-                    }
-
-                    if (!empty($errors)) {
-                        $results['error']++;
-                        foreach ($errors as $err) $results['details'][] = array('type' => 'error', 'msg' => $err);
-                    } else {
-                        // Improved matching: Check by Code OR (Name + Grade + Section)
-                        $existing_id = false;
-
-                        // If we had a code in the CSV (not currently mapped but let's assume Column G might have it or we use name match)
-                        // Actually, mapping says: A: Name, B: Grade, C: Section. Let's stick to Name+Grade+Section for now as primary identifier if code not provided.
-
-                        $existing_id = SM_DB::student_exists($full_display_name, $class_name, $section);
-
-                        $extra = array(
-                            'guardian_phone' => $guardian_phone,
-                            'nationality' => $nationality,
-                            'national_id' => $national_id
-                        );
-
-                        if ($existing_id) {
-                            // DUPLICATE / UPDATE EXISTING
-                            $update_data = array(
-                                'name' => $full_display_name,
-                                'class_name' => $class_name,
-                                'section' => $section,
-                                'parent_email' => $guardian_email,
-                                'guardian_phone' => $guardian_phone,
-                                'nationality' => $nationality,
-                                'national_id' => $national_id,
-                                'student_code' => SM_DB::get_student_by_id($existing_id)->student_code // Keep same code
-                            );
-                            SM_DB::update_student($existing_id, $update_data);
-                            $results['success']++;
-                            $results['duplicate']++;
-                            $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل موجود مسبقاً للطالب ($full_display_name) في السطر $row_index");
-                        } else {
-                            // INSERT NEW
-                            $extra['sort_order'] = $next_sort_order++;
-                            $imported_id = SM_DB::add_student($full_display_name, $class_name, $guardian_email, '', null, null, $section, $extra);
-                            if ($imported_id) {
-                                $results['success']++;
-                                if (!empty($warnings)) {
-                                    $results['warning']++;
-                                    foreach ($warnings as $warn) $results['details'][] = array('type' => 'warning', 'msg' => $warn);
-                                }
-                            } else {
-                                $results['error']++;
-                                $results['details'][] = array('type' => 'error', 'msg' => "فشل حفظ البيانات في قاعدة البيانات للسطر " . $row_index);
-                            }
-                        }
-                    }
-                }
-
-                SM_Logger::log('استيراد طلاب (جماعي)', "تم استيراد {$results['success']} طالب بنجاح من أصل {$results['total']}");
-                set_transient('sm_import_results_' . get_current_user_id(), $results, HOUR_IN_SECONDS);
-                wp_redirect(add_query_arg('sm_admin_msg', 'import_completed', $_SERVER['REQUEST_URI']));
-                exit;
-            }
-        }
 
         // Handle Teacher CSV Upload
         if (isset($_POST['sm_import_teachers_csv']) && wp_verify_nonce($_POST['sm_admin_nonce'], 'sm_admin_action')) {
@@ -2354,5 +2178,182 @@ class SM_Public {
                 exit;
             }
         }
+    }
+
+    public function ajax_upload_import_csv() {
+        if (!current_user_can('إدارة_الطلاب')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security check failed');
+
+        if (empty($_FILES['csv_file']['tmp_name'])) wp_send_json_error('No file uploaded');
+
+        $upload_dir = wp_upload_dir();
+        $temp_dir = $upload_dir['basedir'] . '/sm_temp';
+        if (!file_exists($temp_dir)) wp_mkdir_p($temp_dir);
+
+        $file_name = 'import_' . get_current_user_id() . '_' . time() . '.csv';
+        $file_path = $temp_dir . '/' . $file_name;
+
+        if (move_uploaded_file($_FILES['csv_file']['tmp_name'], $file_path)) {
+            // Count rows
+            $handle = fopen($file_path, "r");
+            $total_rows = 0;
+            while (fgetcsv($handle) !== FALSE) {
+                $total_rows++;
+            }
+            fclose($handle);
+
+            // Initialize Results Transient
+            $results = array(
+                'total'     => $total_rows - 1, // minus header
+                'success'   => 0,
+                'warning'   => 0,
+                'error'     => 0,
+                'duplicate' => 0,
+                'details'   => array()
+            );
+            set_transient('sm_import_results_' . get_current_user_id(), $results, HOUR_IN_SECONDS);
+
+            wp_send_json_success(array(
+                'file_path' => $file_path,
+                'total'     => $total_rows - 1
+            ));
+        } else {
+            wp_send_json_error('Failed to move uploaded file');
+        }
+    }
+
+    public function ajax_process_import_chunk() {
+        if (!current_user_can('إدارة_الطلاب')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security check failed');
+
+        $file_path = sanitize_text_field($_POST['file_path']);
+        $offset = intval($_POST['offset']);
+        $chunk_size = 50;
+
+        if (!file_exists($file_path)) wp_send_json_error('Temp file not found');
+
+        $results = get_transient('sm_import_results_' . get_current_user_id());
+        if (!$results) wp_send_json_error('Session expired');
+
+        $handle = fopen($file_path, "r");
+
+        // Detect delimiter
+        $first_line = fgets($handle);
+        rewind($handle);
+        $delimiters = [',', ';', "\t", '|'];
+        $delimiter = ',';
+        $max_count = -1;
+        foreach ($delimiters as $d) {
+            $count = substr_count($first_line, $d);
+            if ($count > $max_count) {
+                $max_count = $count;
+                $delimiter = $d;
+            }
+        }
+
+        // Skip header and seek to offset
+        fgetcsv($handle, 0, $delimiter);
+        for ($i = 0; $i < $offset; $i++) {
+            fgetcsv($handle, 0, $delimiter);
+        }
+
+        $processed = 0;
+        $next_sort_order = SM_DB::get_next_sort_order();
+        $academic = SM_Settings::get_academic_structure();
+
+        while ($processed < $chunk_size && ($data = fgetcsv($handle, 0, $delimiter)) !== FALSE) {
+            $processed++;
+            $row_index = $offset + $processed + 1;
+
+            $errors = array();
+            $warnings = array();
+
+            // Encoding
+            foreach ($data as $k => $v) {
+                $encoding = mb_detect_encoding($v, array('UTF-8', 'ISO-8859-6', 'ISO-8859-1'), true);
+                if ($encoding && $encoding != 'UTF-8') {
+                    $data[$k] = mb_convert_encoding($v, 'UTF-8', $encoding);
+                }
+            }
+
+            // Mapping: A:Name, B:Grade, C:Section, D:Nationality, E:Email, F:Phone, G:NationalID
+            $name         = isset($data[0]) ? trim($data[0]) : '';
+            $class_name   = isset($data[1]) ? trim($data[1]) : '';
+            $section      = isset($data[2]) ? trim($data[2]) : '';
+            $nationality  = isset($data[3]) ? trim($data[3]) : '';
+            $email        = isset($data[4]) ? trim($data[4]) : '';
+            $phone        = isset($data[5]) ? trim($data[5]) : '';
+            $national_id  = isset($data[6]) ? trim($data[6]) : null;
+
+            if (empty($name)) {
+                $errors[] = "الاسم الكامل مفقود في السطر $row_index";
+            }
+            if (empty($class_name)) {
+                $errors[] = "الصف الدراسي مفقود في السطر $row_index";
+            }
+
+            if (!empty($errors)) {
+                $results['error']++;
+                foreach ($errors as $err) $results['details'][] = array('type' => 'error', 'msg' => $err);
+            } else {
+                // Normalize Grade
+                $grade_number = preg_replace('/[^0-9]/', '', $class_name);
+                if (!empty($grade_number)) {
+                    $class_name = 'الصف ' . $grade_number;
+                    $grade_val = (int)$grade_number;
+                    if (!in_array($grade_val, $academic['active_grades'])) {
+                        $warnings[] = "الصف ($grade_number) غير مفعل في الهيكل المعتمد.";
+                    }
+                }
+
+                $existing_id = SM_DB::student_exists($name, $class_name, $section);
+                $extra = array(
+                    'guardian_phone' => $phone,
+                    'nationality' => $nationality,
+                    'national_id' => $national_id
+                );
+
+                if ($existing_id) {
+                    $update_data = array(
+                        'name' => $name,
+                        'class_name' => $class_name,
+                        'section' => $section,
+                        'parent_email' => $email,
+                        'guardian_phone' => $phone,
+                        'nationality' => $nationality,
+                        'national_id' => $national_id
+                    );
+                    SM_DB::update_student($existing_id, $update_data);
+                    $results['success']++;
+                    $results['duplicate']++;
+                    $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل ($name) في السطر $row_index");
+                } else {
+                    $extra['sort_order'] = $next_sort_order++;
+                    $imported_id = SM_DB::add_student($name, $class_name, $email, '', null, null, $section, $extra);
+                    if ($imported_id) {
+                        $results['success']++;
+                        foreach ($warnings as $warn) $results['details'][] = array('type' => 'warning', 'msg' => $warn);
+                    } else {
+                        $results['error']++;
+                        $results['details'][] = array('type' => 'error', 'msg' => "فشل حفظ السطر $row_index");
+                    }
+                }
+            }
+        }
+
+        fclose($handle);
+        set_transient('sm_import_results_' . get_current_user_id(), $results, HOUR_IN_SECONDS);
+
+        $is_finished = ($processed < $chunk_size);
+        if ($is_finished) {
+            unlink($file_path);
+            SM_Logger::log('استيراد طلاب (AJAX)', "تم استيراد {$results['success']} طالب بنجاح.");
+        }
+
+        wp_send_json_success(array(
+            'processed' => $processed,
+            'finished'  => $is_finished,
+            'total_so_far' => $offset + $processed
+        ));
     }
 }
