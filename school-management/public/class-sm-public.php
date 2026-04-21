@@ -2228,7 +2228,7 @@ class SM_Public {
 
         $file_path = sanitize_text_field($_POST['file_path']);
         $offset = intval($_POST['offset']);
-        $chunk_size = 50;
+        $chunk_size = 20;
 
         if (!file_exists($file_path)) wp_send_json_error('Temp file not found');
 
@@ -2313,33 +2313,42 @@ class SM_Public {
                     'national_id' => $national_id
                 );
 
-                if ($existing_id) {
-                    $update_data = array(
-                        'name' => $name,
-                        'class_name' => $class_name,
-                        'section' => $section,
-                        'parent_email' => $email,
-                        'guardian_phone' => $phone,
-                        'nationality' => $nationality,
-                        'national_id' => $national_id
-                    );
-                    SM_DB::update_student($existing_id, $update_data);
-                    $results['success']++;
-                    $results['duplicate']++;
-                    $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل ($name) في السطر $row_index");
-                } else {
-                    $extra['sort_order'] = $next_sort_order++;
-                    $imported_id = SM_DB::add_student($name, $class_name, $email, ($national_id ?: ''), null, null, $section, $extra);
-                    if ($imported_id) {
-                        if (empty($national_id)) {
-                            SM_DB::update_student_meta($imported_id, 'sm_incomplete_identity', '1');
+                try {
+                    if ($existing_id) {
+                        $update_data = array(
+                            'name' => $name,
+                            'class_name' => $class_name,
+                            'section' => $section,
+                            'parent_email' => $email,
+                            'guardian_phone' => $phone,
+                            'nationality' => $nationality,
+                            'national_id' => $national_id
+                        );
+                        // Force student_code to match national_id if provided
+                        if (!empty($national_id)) {
+                            $update_data['student_code'] = $national_id;
                         }
+
+                        SM_DB::update_student($existing_id, $update_data);
                         $results['success']++;
-                        foreach ($warnings as $warn) $results['details'][] = array('type' => 'warning', 'msg' => $warn);
+                        $results['duplicate']++;
+                        $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل ($name) في السطر $row_index");
                     } else {
-                        $results['error']++;
-                        $results['details'][] = array('type' => 'error', 'msg' => "فشل حفظ السطر $row_index");
+                        $extra['sort_order'] = $next_sort_order++;
+                        $imported_id = SM_DB::add_student($name, $class_name, $email, ($national_id ?: ''), null, null, $section, $extra);
+                        if ($imported_id) {
+                            if (empty($national_id)) {
+                                SM_DB::update_student_meta($imported_id, 'sm_incomplete_identity', '1');
+                            }
+                            $results['success']++;
+                            foreach ($warnings as $warn) $results['details'][] = array('type' => 'warning', 'msg' => $warn);
+                        } else {
+                            throw new Exception("فشل حفظ البيانات في قاعدة البيانات");
+                        }
                     }
+                } catch (Exception $e) {
+                    $results['error']++;
+                    $results['details'][] = array('type' => 'error', 'msg' => "خطأ في السطر $row_index: " . $e->getMessage());
                 }
             }
         }
