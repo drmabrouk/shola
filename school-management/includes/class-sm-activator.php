@@ -197,6 +197,17 @@ class SM_Activator {
             PRIMARY KEY  (id),
             KEY student_id (student_id),
             KEY meta_key (meta_key)
+        ) $charset_collate;
+
+        CREATE TABLE {$wpdb->prefix}sm_documents (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            title varchar(255) NOT NULL,
+            description text,
+            file_url varchar(255) NOT NULL,
+            status varchar(20) DEFAULT 'published',
+            created_by bigint(20) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

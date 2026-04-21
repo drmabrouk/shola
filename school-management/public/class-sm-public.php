@@ -1085,6 +1085,50 @@ class SM_Public {
         }
     }
 
+    public function ajax_add_document() {
+        if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
+
+        global $wpdb;
+        $result = $wpdb->insert("{$wpdb->prefix}sm_documents", array(
+            'title' => sanitize_text_field($_POST['title']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'file_url' => esc_url_raw($_POST['file_url']),
+            'status' => sanitize_text_field($_POST['status']),
+            'created_by' => get_current_user_id()
+        ));
+
+        if ($result) wp_send_json_success();
+        else wp_send_json_error('Failed to save');
+    }
+
+    public function ajax_update_document() {
+        if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
+
+        global $wpdb;
+        $result = $wpdb->update("{$wpdb->prefix}sm_documents", array(
+            'title' => sanitize_text_field($_POST['title']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'file_url' => esc_url_raw($_POST['file_url']),
+            'status' => sanitize_text_field($_POST['status'])
+        ), array('id' => intval($_POST['doc_id'])));
+
+        if ($result !== false) wp_send_json_success();
+        else wp_send_json_error('Failed to update');
+    }
+
+    public function ajax_delete_document() {
+        if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security');
+
+        global $wpdb;
+        $result = $wpdb->delete("{$wpdb->prefix}sm_documents", array('id' => intval($_POST['doc_id'])));
+
+        if ($result) wp_send_json_success();
+        else wp_send_json_error('Failed to delete');
+    }
+
     public function ajax_delete_log() {
         if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
         if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security check failed');

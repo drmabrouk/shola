@@ -479,6 +479,12 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                     </li>
                 <?php endif; ?>
 
+                <?php if (($is_wp_admin || !empty($my_visibility['documents']))): ?>
+                    <li class="sm-sidebar-item <?php echo $active_tab == 'documents' ? 'sm-active' : ''; ?>">
+                        <a href="<?php echo add_query_arg('sm_tab', 'documents'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-media-document"></span> مكتبة الوثائق والتقارير</a>
+                    </li>
+                <?php endif; ?>
+
                 <?php if (($is_wp_admin || !empty($my_visibility['printing'])) && ($is_admin || $is_sys_admin || $is_principal || $is_supervisor)): ?>
                     <li class="sm-sidebar-item <?php echo $active_tab == 'printing' ? 'sm-active' : ''; ?>">
                         <a href="<?php echo add_query_arg('sm_tab', 'printing'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-printer"></span> مركز الطباعة</a>
@@ -545,6 +551,10 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
 
                 case 'messaging':
                     include SM_PLUGIN_DIR . 'templates/messaging-center.php';
+                    break;
+
+                case 'documents':
+                    include SM_PLUGIN_DIR . 'templates/admin-documents.php';
                     break;
 
                 case 'teachers':
@@ -819,7 +829,8 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
                                     'lesson-plans' => 'تحضير الدروس',
                                     'assignments' => 'الواجبات المدرسية',
                                     'clinic' => 'العيادة المدرسية',
-                                    'messaging' => 'مركز المراسلة'
+                                    'messaging' => 'مركز المراسلة',
+                                    'documents' => 'مكتبة الوثائق والتقارير'
                                 );
                                 ?>
                                 <h4 style="margin-top:0;">تخصيص ظهور أقسام القائمة الجانبية حسب الرتب</h4>
