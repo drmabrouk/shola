@@ -249,7 +249,7 @@ if ($import_results) {
                         percentageText.innerText = percentage + '%';
                         currentRowNum.innerText = newOffset;
 
-                        if (res.data.finished) {
+                        if (res.data.finished || newOffset >= total) {
                             statusText.innerText = 'اكتمل الاستيراد بنجاح!';
                             isImporting = false;
                             setTimeout(() => {
@@ -259,8 +259,23 @@ if ($import_results) {
                             processChunk(filePath, newOffset, total);
                         }
                     } else {
+                        isImporting = false;
+                        statusText.innerText = 'توقف الاستيراد بسبب خطأ.';
+                        statusText.style.color = 'red';
+
+                        const retryBtn = document.createElement('button');
+                        retryBtn.innerText = 'إعادة المحاولة من السطر ' + offset;
+                        retryBtn.className = 'sm-btn';
+                        retryBtn.style.marginTop = '10px';
+                        retryBtn.onclick = function() {
+                            this.remove();
+                            statusText.style.color = 'var(--sm-primary-color)';
+                            isImporting = true;
+                            processChunk(filePath, offset, total);
+                        };
+                        progressContainer.appendChild(retryBtn);
+
                         alert('خطأ أثناء المعالجة: ' + res.data);
-                        resetUI();
                     }
                 });
             }
