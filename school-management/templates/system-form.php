@@ -84,16 +84,16 @@
         </div>
 
         <div class="sm-form-group">
-            <label class="sm-label">الإجراء المتخذ (تدرج انضباطي إلزامي):</label>
+            <label class="sm-label">الإجراء المتخذ:</label>
             <select name="action_taken" id="action_taken" class="sm-select" required>
                 <option value="">-- اختر الإجراء --</option>
                 <?php foreach (SM_Settings::get_disciplinary_actions() as $level => $act): ?>
                     <option value="<?php echo esc_attr($act); ?>" data-level="<?php echo $level; ?>"><?php echo $level . '. ' . esc_html($act); ?></option>
                 <?php endforeach; ?>
             </select>
-            <div id="action-progression-warning" style="display:none; margin-top:8px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:6px; font-size:12px; color:#c53030;">
-                <span class="dashicons dashicons-warning" style="font-size:14px; width:14px; height:14px; margin-left:5px;"></span>
-                تنبيه: هذا الطالب تلقى إجراءً سابقاً بنطاق مشابه أو أعلى. يرجى اتباع التدرج المنطقي.
+            <div id="action-progression-warning" style="display:none; margin-top:8px; padding:10px; background:#fffaf0; border:1px solid #feebc8; border-radius:6px; font-size:12px; color:#975a16;">
+                <span class="dashicons dashicons-info" style="font-size:14px; width:14px; height:14px; margin-left:5px;"></span>
+                ملاحظة: هذا الطالب تلقى إجراءات سابقة. يمكنك اختيار الإجراء المناسب بحرية.
             </div>
         </div>
 
@@ -335,41 +335,29 @@ function fetchIntelligence(studentId) {
             });
             document.getElementById('intel-history').innerHTML = historyHtml;
 
-            // Handle Action Progression Logic
+            // Handle Action Selection (Removed restrictions)
             const actionSelect = document.getElementById('action_taken');
             const warningBox = document.getElementById('action-progression-warning');
 
             if (actionSelect) {
                 const nextIndex = data.last_action_index + 1;
-                const is_admin = data.is_admin;
 
                 for (let i = 0; i < actionSelect.options.length; i++) {
                     const opt = actionSelect.options[i];
                     const level = parseInt(opt.getAttribute('data-level') || 0);
 
                     if (level > 0) {
-                        if (!is_admin) {
-                            // Non-admins MUST select the exact next level
-                            if (level !== nextIndex) {
-                                opt.disabled = true;
-                                if (level < nextIndex) {
-                                    opt.text = '(سابق) ' + opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
-                                } else {
-                                    opt.text = '(تخطي) ' + opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
-                                }
-                            } else {
-                                opt.disabled = false;
-                                opt.text = opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
-                            }
-                        } else {
-                            // Admins can select any level
-                            opt.disabled = false;
-                            opt.text = opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+                        // Enable all levels for supervisors and admins
+                        opt.disabled = false;
+                        opt.text = opt.text.replace('(سابق) ', '').replace('(تخطي) ', '');
+
+                        if (level === nextIndex) {
+                            opt.text = '⭐ ' + opt.text + ' (مقترح)';
                         }
                     }
                 }
 
-                // Auto-recommend next level
+                // Auto-recommend next level but don't force
                 if (nextIndex <= 8) {
                     for (let i = 0; i < actionSelect.options.length; i++) {
                         if (parseInt(actionSelect.options[i].getAttribute('data-level')) === nextIndex) {

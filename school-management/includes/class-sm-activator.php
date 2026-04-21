@@ -49,6 +49,7 @@ class SM_Activator {
             details text NOT NULL,
             action_taken text,
             reward_penalty text,
+            contacted tinyint(1) DEFAULT 0 NOT NULL,
             status varchar(20) DEFAULT 'accepted' NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),

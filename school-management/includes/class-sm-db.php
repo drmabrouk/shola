@@ -300,7 +300,7 @@ class SM_DB {
 
     public static function get_records($filters = array()) {
         global $wpdb;
-        $query = "SELECT r.*, s.name as student_name, s.class_name, s.section, s.guardian_phone FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id WHERE 1=1";
+        $query = "SELECT r.*, s.name as student_name, s.class_name, s.section, s.guardian_phone, s.parent_email, s.student_code FROM {$wpdb->prefix}sm_records r JOIN {$wpdb->prefix}sm_students s ON r.student_id = s.id WHERE 1=1";
         
         if (!empty($filters['student_id'])) {
             $query .= $wpdb->prepare(" AND r.student_id = %d", $filters['student_id']);
@@ -350,6 +350,15 @@ class SM_DB {
         }
 
         return $wpdb->get_results($query);
+    }
+
+    public static function mark_record_contacted($record_id) {
+        global $wpdb;
+        return $wpdb->update(
+            "{$wpdb->prefix}sm_records",
+            array('contacted' => 1),
+            array('id' => intval($record_id))
+        );
     }
 
     public static function update_record_status($record_id, $status) {
@@ -1184,10 +1193,15 @@ class SM_DB {
             }
         } else {
             // If status is NOT absent, remove any auto-generated absence violation for this date
-            $wpdb->query($wpdb->prepare(
-                "DELETE FROM {$wpdb->prefix}sm_records WHERE student_id = %d AND type = %s AND details = %s",
+            // Use delete_record to ensure points are synchronized
+            $existing_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}sm_records WHERE student_id = %d AND type = %s AND details = %s",
                 $student_id, $violation_type, $details
             ));
+
+            if ($existing_id) {
+                self::delete_record($existing_id);
+            }
         }
     }
 
