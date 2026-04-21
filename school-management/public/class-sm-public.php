@@ -1054,6 +1054,37 @@ class SM_Public {
         wp_send_json_success();
     }
 
+    public function ajax_filter_violations() {
+        if (!is_user_logged_in()) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['nonce'], 'sm_record_action')) wp_send_json_error('Security check');
+
+        $filters = array();
+        if (isset($_POST['student_search'])) $filters['search'] = sanitize_text_field($_POST['student_search']);
+        if (isset($_POST['class_filter'])) $filters['class_name'] = sanitize_text_field($_POST['class_filter']);
+        if (isset($_POST['section_filter'])) $filters['section'] = sanitize_text_field($_POST['section_filter']);
+        if (isset($_POST['type_filter'])) $filters['type'] = sanitize_text_field($_POST['type_filter']);
+
+        $records = SM_DB::get_records($filters);
+
+        ob_start();
+        include SM_PLUGIN_DIR . 'templates/partials/violations-table-rows.php';
+        $rows_html = ob_get_clean();
+
+        wp_send_json_success(array('html' => $rows_html));
+    }
+
+    public function ajax_mark_contacted() {
+        if (!is_user_logged_in()) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['nonce'], 'sm_record_action')) wp_send_json_error('Security check');
+
+        $record_id = intval($_POST['record_id']);
+        if (SM_DB::mark_record_contacted($record_id)) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error('Failed to update status');
+        }
+    }
+
     public function ajax_delete_log() {
         if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
         if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security check failed');
