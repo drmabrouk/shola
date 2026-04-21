@@ -2209,6 +2209,7 @@ class SM_Public {
                 'warning'   => 0,
                 'error'     => 0,
                 'duplicate' => 0,
+                'generated' => 0, // Count of auto-generated IDs
                 'details'   => array()
             );
             set_transient('sm_import_results_' . get_current_user_id(), $results, HOUR_IN_SECONDS);
@@ -2335,9 +2336,12 @@ class SM_Public {
                         $results['details'][] = array('type' => 'info', 'msg' => "تم تحديث سجل ($name) في السطر $row_index");
                     } else {
                         $extra['sort_order'] = $next_sort_order++;
-                        $imported_id = SM_DB::add_student($name, $class_name, $email, ($national_id ?: ''), null, null, $section, $extra);
+                        $final_id_to_use = !empty($national_id) ? $national_id : '';
+
+                        $imported_id = SM_DB::add_student($name, $class_name, $email, $final_id_to_use, null, null, $section, $extra);
                         if ($imported_id) {
                             if (empty($national_id)) {
+                                $results['generated']++;
                                 SM_DB::update_student_meta($imported_id, 'sm_incomplete_identity', '1');
                             }
                             $results['success']++;

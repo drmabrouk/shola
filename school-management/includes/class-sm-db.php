@@ -100,15 +100,15 @@ class SM_DB {
 
     public static function generate_student_code() {
         global $wpdb;
-        $last_code = $wpdb->get_var("SELECT student_code FROM {$wpdb->prefix}sm_students WHERE student_code LIKE 'ST%' ORDER BY student_code DESC LIMIT 1");
+        // Search for the highest numeric student_code
+        $last_code = $wpdb->get_var("SELECT student_code FROM {$wpdb->prefix}sm_students WHERE student_code REGEXP '^[0-9]+$' ORDER BY CAST(student_code AS UNSIGNED) DESC LIMIT 1");
 
         if (!$last_code) {
-            return 'ST00001';
+            return '00001';
         }
 
-        $number = (int) substr($last_code, 2);
-        $next_number = $number + 1;
-        return 'ST' . str_pad($next_number, 5, '0', STR_PAD_LEFT);
+        $next_number = intval($last_code) + 1;
+        return str_pad($next_number, 5, '0', STR_PAD_LEFT);
     }
 
     public static function add_student($name, $class, $email, $code = '', $parent_user_id = null, $teacher_id = null, $section = '', $extra = array()) {
@@ -145,7 +145,7 @@ class SM_DB {
 
         $sort_order = isset($extra['sort_order']) ? intval($extra['sort_order']) : self::get_next_sort_order();
 
-        SM_Logger::log('إضافة طالب', "الاسم: $name، الصف: $class، الشعبة: $section");
+        SM_Logger::log('إضافة طالب', "الاسم: $name, الصف: $class, الشعبة: $section");
         $success = $wpdb->insert(
             "{$wpdb->prefix}sm_students",
             array(

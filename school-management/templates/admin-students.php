@@ -14,22 +14,26 @@ if ($import_results) {
                 <span style="font-size: 12px; color: #718096;">إجمالي السجلات المعالجة: <?php echo $import_results['total']; ?></span>
             </div>
             <div style="padding: 25px;">
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px;">
                     <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 1px solid #c6f6d5; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #2f855a;"><?php echo $import_results['success'] - ($import_results['duplicate'] ?? 0); ?></div>
-                        <div style="font-size: 12px; color: #38a169;">سجلات جديدة</div>
+                        <div style="font-size: 11px; color: #38a169;">سجلات جديدة</div>
+                    </div>
+                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 800; color: #2c7a7b;"><?php echo $import_results['generated'] ?? 0; ?></div>
+                        <div style="font-size: 11px; color: #319795;">أكواد تم توليدها</div>
                     </div>
                     <div style="background: #ebf8ff; padding: 15px; border-radius: 8px; border: 1px solid #bee3f8; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #2b6cb0;"><?php echo $import_results['duplicate'] ?? 0; ?></div>
-                        <div style="font-size: 12px; color: #3182ce;">سجلات مكررة (تم التحديث)</div>
+                        <div style="font-size: 11px; color: #3182ce;">سجلات مكررة</div>
                     </div>
                     <div style="background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px solid #feebc8; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #c05621;"><?php echo $import_results['warning']; ?></div>
-                        <div style="font-size: 12px; color: #dd6b20;">تنبيهات الهيكل</div>
+                        <div style="font-size: 11px; color: #dd6b20;">تنبيهات</div>
                     </div>
                     <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #fed7d7; text-align: center;">
                         <div style="font-size: 20px; font-weight: 800; color: #c53030;"><?php echo $import_results['error']; ?></div>
-                        <div style="font-size: 12px; color: #e53e3e;">أخطاء البيانات</div>
+                        <div style="font-size: 11px; color: #e53e3e;">أخطاء</div>
                     </div>
                 </div>
 
