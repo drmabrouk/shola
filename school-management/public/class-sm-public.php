@@ -1130,7 +1130,7 @@ class SM_Public {
     }
 
     public function ajax_save_regulation_settings() {
-        if (!current_user_can('manage_options') && !current_user_can('sm_principal')) wp_send_json_error('Unauthorized');
+        if (!current_user_can('manage_options') && !current_user_can('sm_principal') && !current_user_can('sm_supervisor')) wp_send_json_error('Unauthorized');
         if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
 
         $types_raw = explode("\n", str_replace("\r", "", $_POST['violation_types']));
@@ -1149,11 +1149,14 @@ class SM_Public {
             'medium' => sanitize_textarea_field($_POST['suggested_medium']),
             'high' => sanitize_textarea_field($_POST['suggested_high'])
         ));
+
+        SM_Logger::log('تحديث إعدادات اللائحة', 'قام المستخدم بتحديث أنواع المخالفات العامة واقتراحات الإجراءات.');
+
         wp_send_json_success();
     }
 
     public function ajax_save_hierarchical_violations() {
-        if (!current_user_can('manage_options') && !current_user_can('sm_principal')) wp_send_json_error('Unauthorized');
+        if (!current_user_can('manage_options') && !current_user_can('sm_principal') && !current_user_can('sm_supervisor')) wp_send_json_error('Unauthorized');
         if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
 
         $processed = array();
@@ -1173,6 +1176,8 @@ class SM_Public {
             }
         }
         SM_Settings::save_hierarchical_violations($processed);
+        SM_Logger::log('تحديث لائحة المخالفات الهرمية', 'تم تحديث بنود اللائحة والنقاط والإجراءات لجميع المستويات.');
+
         wp_send_json_success();
     }
 

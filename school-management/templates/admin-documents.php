@@ -232,7 +232,7 @@
     </div><!-- End doc-library-tab -->
 
     <?php if (current_user_can('تسجيل_مخالفة')):
-        $can_edit_regulation = current_user_can('إدارة_النظام') || current_user_can('sm_principal');
+        $can_edit_regulation = current_user_can('إدارة_النظام') || current_user_can('sm_principal') || current_user_can('sm_supervisor');
     ?>
     <div id="regulation-custom-tab" class="sm-internal-tab" style="display:none;">
         <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:25px; margin-bottom:30px;">
