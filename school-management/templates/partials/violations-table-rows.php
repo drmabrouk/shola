@@ -11,7 +11,12 @@
     $type_labels = SM_Settings::get_violation_types();
     $severity_labels = SM_Settings::get_severities();
     foreach ($records as $row):
-        $waMsg = rawurlencode("تنبيه من المدرسة بخصوص الطالب: {$row->student_name}\nنوع المخالفة: {$row->type}\nالإجراء المتخذ: {$row->action_taken}\nالتاريخ والوقت: ".date('Y-m-d H:i', strtotime($row->created_at)));
+        // Dynamic Linking
+        $reg = SM_Settings::get_regulation_by_code($row->violation_code);
+        $display_type = $reg ? $reg['name'] : $row->type;
+        $display_action = $reg ? $reg['action'] : $row->action_taken;
+
+        $waMsg = rawurlencode("تنبيه من المدرسة بخصوص الطالب: {$row->student_name}\nنوع المخالفة: {$display_type}\nالإجراء المتخذ: {$display_action}\nالتاريخ والوقت: ".date('Y-m-d H:i', strtotime($row->created_at)));
         $raw_phone = $row->guardian_phone ?? '';
         $formatted_phone = SM_Settings::format_uae_phone($raw_phone);
     ?>
@@ -41,7 +46,7 @@
             <td style="text-align:center;"><span style="font-weight:900; color:var(--sm-primary-color);"><?php echo (int)$row->degree; ?></span></td>
             <td>
                 <div style="font-weight:600;"><?php echo esc_html($row->violation_code); ?></div>
-                <div style="font-size:11px; color:#718096;"><?php echo $row->type; ?></div>
+                <div style="font-size:11px; color:#718096;"><?php echo $display_type; ?></div>
             </td>
             <td style="text-align:center; font-weight:800; color:#111F35;"><?php echo (int)$row->points; ?></td>
             <td style="text-align:center;"><span class="sm-badge" style="background:#edf2f7; color:#4a5568;"><?php echo (int)$row->recurrence_count; ?></span></td>

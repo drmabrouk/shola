@@ -1,11 +1,19 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 <div class="sm-content-wrapper" dir="rtl">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h2 style="margin:0; font-weight: 900; color: #111F35;">مكتبة الوثائق والتقارير الرسمية</h2>
-        <?php if (current_user_can('إدارة_النظام')): ?>
-            <button onclick="document.getElementById('add-doc-modal').style.display='flex'" class="sm-btn" style="width: auto; padding: 0 25px;">+ إضافة مستند جديد</button>
+    <div class="sm-tabs-wrapper" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+        <button class="sm-tab-btn sm-active" onclick="smOpenInternalTab('doc-library-tab', this)">📂 مكتبة الوثائق والتقارير</button>
+        <?php if (current_user_can('تسجيل_مخالفة')): // Supervisors and above ?>
+            <button class="sm-tab-btn" onclick="smOpenInternalTab('regulation-custom-tab', this)">📜 تخصيص اللائحة التنظيمية</button>
         <?php endif; ?>
     </div>
+
+    <div id="doc-library-tab" class="sm-internal-tab">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin:0; font-weight: 900; color: #111F35;">مكتبة الوثائق والتقارير الرسمية</h2>
+            <?php if (current_user_can('إدارة_النظام')): ?>
+                <button onclick="document.getElementById('add-doc-modal').style.display='flex'" class="sm-btn" style="width: auto; padding: 0 25px;">+ إضافة مستند جديد</button>
+            <?php endif; ?>
+        </div>
 
     <?php
     global $wpdb;
@@ -17,7 +25,7 @@
     $docs = $wpdb->get_results($query);
     ?>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-bottom: 40px;">
         <?php if (empty($docs)): ?>
             <div style="grid-column: 1 / -1; background: #f8fafc; padding: 60px; border-radius: 12px; text-align: center; border: 2px dashed #e2e8f0;">
                 <span class="dashicons dashicons-media-document" style="font-size: 50px; width: 50px; height: 50px; color: #cbd5e0; margin-bottom: 15px;"></span>
@@ -221,4 +229,126 @@
     <style>
     .sm-doc-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
     </style>
+    </div><!-- End doc-library-tab -->
+
+    <?php if (current_user_can('تسجيل_مخالفة')):
+        $can_edit_regulation = current_user_can('إدارة_النظام') || current_user_can('sm_principal');
+    ?>
+    <div id="regulation-custom-tab" class="sm-internal-tab" style="display:none;">
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:25px; margin-bottom:30px;">
+            <h4 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:15px; color:var(--sm-primary-color);">إعدادات المخالفات العامة</h4>
+            <form id="sm-violation-settings-form">
+                <?php wp_nonce_field('sm_admin_action', 'sm_nonce'); ?>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="sm-form-group">
+                        <label class="sm-label">أنواع المخالفات العامة (مفتاح|اسم):</label>
+                        <textarea name="violation_types" class="sm-textarea" rows="5" <?php if (!$can_edit_regulation) echo 'readonly'; ?>><?php foreach(SM_Settings::get_violation_types() as $k=>$v) echo "$k|$v\n"; ?></textarea>
+                    </div>
+                    <div class="sm-form-group">
+                        <?php $actions = SM_Settings::get_suggested_actions(); ?>
+                        <label class="sm-label">اقتراحات الإجراءات (كل سطر خيار):</label>
+                        <div style="font-size:11px; margin-bottom:5px;">منخفضة:</div>
+                        <textarea name="suggested_low" class="sm-textarea" rows="2" <?php if (!$can_edit_regulation) echo 'readonly'; ?>><?php echo esc_textarea($actions['low']); ?></textarea>
+                        <div style="font-size:11px; margin-top:5px; margin-bottom:5px;">متوسطة:</div>
+                        <textarea name="suggested_medium" class="sm-textarea" rows="2" <?php if (!$can_edit_regulation) echo 'readonly'; ?>><?php echo esc_textarea($actions['medium']); ?></textarea>
+                        <div style="font-size:11px; margin-top:5px; margin-bottom:5px;">خطيرة:</div>
+                        <textarea name="suggested_high" class="sm-textarea" rows="2" <?php if (!$can_edit_regulation) echo 'readonly'; ?>><?php echo esc_textarea($actions['high']); ?></textarea>
+                    </div>
+                </div>
+                <?php if ($can_edit_regulation): ?>
+                    <button type="submit" class="sm-btn" style="width:auto;">حفظ إعدادات المخالفات</button>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <form id="sm-hierarchical-violations-form">
+            <?php wp_nonce_field('sm_admin_action', 'sm_nonce');
+            $h_violations = SM_Settings::get_hierarchical_violations();
+            ?>
+            <h4 style="margin-top:0;">إدارة اللائحة التنظيمية والمخالفات الهرمية</h4>
+            <p style="font-size:12px; color:#666; margin-bottom:20px;">تعديل تفاصيل المخالفات، النقاط المستحقة، والإجراءات الافتراضية لكل مستوى. التغييرات تطبق فوراً عبر النظام.</p>
+
+            <?php for($i=1; $i<=4; $i++): ?>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin-bottom:20px;">
+                    <div style="font-weight:800; color:var(--sm-primary-color); margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>المستوى <?php echo $i; ?> (الدرجة <?php echo $i; ?>)</span>
+                        <span style="font-size:11px; background:#fff; padding:2px 10px; border-radius:4px; color:#666; border:1px solid #ddd;">المخالفات: <?php echo count($h_violations[$i]); ?></span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 80px 1fr 60px 1fr <?php echo $can_edit_regulation ? 'auto' : ''; ?>; gap:10px; font-weight:700; font-size:11px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <div>الكود</div>
+                        <div>الوصف / المسمى</div>
+                        <div>النقاط</div>
+                        <div>الإجراء المقترح</div>
+                        <?php if ($can_edit_regulation): ?><div>-</div><?php endif; ?>
+                    </div>
+                    <div class="violation-rows-container" data-level="<?php echo $i; ?>">
+                        <?php foreach($h_violations[$i] as $code => $v): ?>
+                            <div style="display:grid; grid-template-columns: 80px 1fr 60px 1fr <?php echo $can_edit_regulation ? 'auto' : ''; ?>; gap:10px; margin-bottom:8px;">
+                                <input type="text" name="h_viol[<?php echo $i; ?>][<?php echo $code; ?>][code]" value="<?php echo esc_attr($code); ?>" class="sm-input" style="padding:5px; font-size:12px;" <?php if (!$can_edit_regulation) echo 'readonly'; ?>>
+                                <input type="text" name="h_viol[<?php echo $i; ?>][<?php echo $code; ?>][name]" value="<?php echo esc_attr($v['name']); ?>" class="sm-input" style="padding:5px; font-size:12px;" <?php if (!$can_edit_regulation) echo 'readonly'; ?>>
+                                <input type="number" name="h_viol[<?php echo $i; ?>][<?php echo $code; ?>][points]" value="<?php echo esc_attr($v['points']); ?>" class="sm-input" style="padding:5px; font-size:12px;" <?php if (!$can_edit_regulation) echo 'readonly'; ?>>
+                                <input type="text" name="h_viol[<?php echo $i; ?>][<?php echo $code; ?>][action]" value="<?php echo esc_attr($v['action']); ?>" class="sm-input" style="padding:5px; font-size:12px;" <?php if (!$can_edit_regulation) echo 'readonly'; ?>>
+                                <?php if ($can_edit_regulation): ?>
+                                    <button type="button" onclick="this.parentElement.remove()" class="sm-btn sm-btn-outline" style="padding:0; width:28px; height:28px; color:red;">×</button>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php if ($can_edit_regulation): ?>
+                        <button type="button" class="sm-btn sm-btn-outline" style="font-size:11px; margin-top:10px;" onclick="addViolationRow(<?php echo $i; ?>, this)">+ إضافة بند جديد للمستوى <?php echo $i; ?></button>
+                    <?php endif; ?>
+                </div>
+            <?php endfor; ?>
+
+            <?php if ($can_edit_regulation): ?>
+                <button type="submit" class="sm-btn" style="width:auto; margin-top:10px;">حفظ اللائحة بالكامل</button>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <script>
+    function addViolationRow(level, btn) {
+        const container = btn.previousElementSibling;
+        const div = document.createElement('div');
+        div.style = "display:grid; grid-template-columns: 80px 1fr 60px 1fr auto; gap:10px; margin-bottom:8px;";
+        const id = 'new_' + Math.random().toString(36).substr(2, 5);
+        div.innerHTML = `
+            <input type="text" name="h_viol[${level}][${id}][code]" placeholder="كود" class="sm-input" style="padding:5px; font-size:12px;">
+            <input type="text" name="h_viol[${level}][${id}][name]" placeholder="الوصف" class="sm-input" style="padding:5px; font-size:12px;">
+            <input type="number" name="h_viol[${level}][${id}][points]" value="0" class="sm-input" style="padding:5px; font-size:12px;">
+            <input type="text" name="h_viol[${level}][${id}][action]" placeholder="الإجراء" class="sm-input" style="padding:5px; font-size:12px;">
+            <button type="button" onclick="this.parentElement.remove()" class="sm-btn sm-btn-outline" style="padding:0; width:28px; height:28px; color:red;">×</button>
+        `;
+        container.appendChild(div);
+    }
+
+    (function() {
+        const vSettingsForm = document.getElementById('sm-violation-settings-form');
+        if (vSettingsForm) {
+            vSettingsForm.onsubmit = function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('action', 'sm_save_regulation_settings_ajax');
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
+                .then(r => r.json()).then(res => {
+                    if (res.success) smShowNotification('تم حفظ الإعدادات بنجاح');
+                });
+            };
+        }
+
+        const hViolForm = document.getElementById('sm-hierarchical-violations-form');
+        if (hViolForm) {
+            hViolForm.onsubmit = function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('action', 'sm_save_hierarchical_violations_ajax');
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
+                .then(r => r.json()).then(res => {
+                    if (res.success) smShowNotification('تم تحديث اللائحة بنجاح وتطبيقها على النظام');
+                });
+            };
+        }
+    })();
+    </script>
+    <?php endif; ?>
 </div>

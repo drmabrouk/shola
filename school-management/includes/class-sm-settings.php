@@ -233,6 +233,20 @@ class SM_Settings {
         update_option('sm_hierarchical_violations', $data);
     }
 
+    /**
+     * Fetch Regulation Dynamic Info by Code
+     */
+    public static function get_regulation_by_code($code) {
+        if (empty($code)) return false;
+        $h_violations = self::get_hierarchical_violations();
+        foreach ($h_violations as $level => $items) {
+            if (isset($items[$code])) {
+                return $items[$code];
+            }
+        }
+        return false;
+    }
+
     public static function get_class_security_codes() {
         $codes = get_option('sm_class_security_codes', array());
         return $codes;
