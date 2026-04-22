@@ -14,7 +14,7 @@ if ($import_results) {
         <div style="display: flex; gap: 10px; align-items: center;">
             <button onclick="document.getElementById('add-single-student-modal').style.display='flex'" class="sm-btn" style="min-width: 160px; height: 42px; font-size: 13px;">+ إضافة طالب جديد</button>
             <button onclick="document.getElementById('csv-import-form').style.display='block'" class="sm-btn sm-btn-secondary" style="min-width: 160px; height: 42px; font-size: 13px;">استيراد طلاب (Excel)</button>
-            <a href="data:text/csv;charset=utf-8,<?php echo rawurlencode("الاسم الكامل,الصف,الشعبة,الجنسية,البريد,الهاتف\nأحمد محمد,الصف 12,أ,إماراتي,parent@example.com,0501234567"); ?>" download="student_template.csv" class="sm-btn sm-btn-outline" style="text-decoration:none; min-width: 160px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 13px;">تحميل نموذج CSV</a>
+            <a href="data:text/csv;charset=utf-8,<?php echo rawurlencode("الاسم الكامل,الصف,الشعبة,الجنسية,البريد,الهاتف,رقم الهوية\nأحمد محمد,الصف 12,أ,إماراتي,parent@example.com,0501234567,784-1234-1234567-1"); ?>" download="student_template.csv" class="sm-btn sm-btn-outline" style="text-decoration:none; min-width: 160px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 13px;">تحميل نموذج CSV</a>
             <a href="<?php echo admin_url('admin-ajax.php?action=sm_print&print_type=id_card'); ?>" target="_blank" class="sm-btn sm-btn-accent" style="background: #27ae60; text-decoration:none; min-width: 160px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 13px;">طباعة كافة البطاقات</a>
         </div>
         <?php endif; ?>
