@@ -533,7 +533,6 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
 
                 case 'students':
                     if ($is_admin || current_user_can('إدارة_الطلاب')) {
-                        echo '<h3 style="margin-top:0;">إدارة الطلاب</h3>';
                         include SM_PLUGIN_DIR . 'templates/admin-students.php';
                     }
                     break;
