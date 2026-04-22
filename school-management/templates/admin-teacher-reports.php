@@ -37,6 +37,8 @@
                     $severity_labels = SM_Settings::get_severities();
                     foreach ($records as $row):
                         $teacher = get_userdata($row->teacher_id);
+                        $reg = SM_Settings::get_regulation_by_code($row->violation_code);
+                        $display_type = $reg ? $reg['name'] : ($type_labels[$row->type] ?? $row->type);
                     ?>
                         <tr>
                             <td>
@@ -47,7 +49,7 @@
                                 <?php echo $teacher ? esc_html($teacher->display_name) : 'غير معروف'; ?>
                             </td>
                             <td><?php echo date('Y-m-d H:i', strtotime($row->created_at)); ?></td>
-                            <td><?php echo $type_labels[$row->type] ?? $row->type; ?></td>
+                            <td><?php echo $display_type; ?></td>
                             <td style="max-width: 250px; font-size: 13px; color: #4a5568; font-style: italic;">"<?php echo esc_html($row->details); ?>"</td>
                             <td>
                                 <span class="sm-badge sm-badge-<?php echo esc_attr($row->severity); ?>">

@@ -67,6 +67,11 @@
             <div style="font-size: 10px;">الرقم المرجعي: <strong><?php echo date('Ym') . $record->id; ?></strong></div>
         </div>
 
+        <?php
+        // Dynamic Linking
+        $reg = SM_Settings::get_regulation_by_code($record->violation_code);
+        $display_action = $reg ? $reg['action'] : $record->action_taken;
+        ?>
         <div class="content-grid">
             <div class="row">
                 <span class="label">اسم الطالب:</span>
@@ -86,11 +91,11 @@
             </div>
             <div class="row">
                 <span class="label">البند القانوني / المرجع:</span>
-                <span class="value"><?php echo esc_html($record->violation_code); ?></span>
+                <span class="value"><?php echo esc_html($record->violation_code); ?> (<?php echo esc_html($reg ? $reg['name'] : $record->type); ?>)</span>
             </div>
             <div class="row">
                 <span class="label">القرار (الإجراء المتخذ):</span>
-                <span class="value" style="font-weight: 800; color: #F63049;"><?php echo esc_html($record->action_taken); ?></span>
+                <span class="value" style="font-weight: 800; color: #F63049;"><?php echo esc_html($display_action); ?></span>
             </div>
         </div>
 

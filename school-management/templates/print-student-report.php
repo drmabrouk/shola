@@ -106,11 +106,14 @@
             <?php if (empty($records)): ?>
                 <tr><td colspan="5">لا توجد سجلات مسجلة لهذا الطالب.</td></tr>
             <?php else: ?>
-                <?php foreach ($records as $r): ?>
+                <?php foreach ($records as $r):
+                    $reg = SM_Settings::get_regulation_by_code($r->violation_code);
+                    $display_type = $reg ? $reg['name'] : $r->type;
+                ?>
                 <tr>
                     <td style="font-weight: 800; text-align: right;"><?php echo esc_html($student->name); ?></td>
                     <td style="font-family: monospace; font-weight: 700;"><?php echo esc_html($student->student_code); ?></td>
-                    <td style="text-align: right;"><?php echo esc_html($r->violation_code) . ' - ' . esc_html($r->type); ?></td>
+                    <td style="text-align: right;"><?php echo esc_html($r->violation_code) . ' - ' . esc_html($display_type); ?></td>
                     <td><?php echo SM_Settings::format_grade_name($student->class_name, $student->section); ?></td>
                     <td><?php echo date('Y-m-d', strtotime($r->created_at)); ?></td>
                 </tr>

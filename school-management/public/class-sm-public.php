@@ -1129,6 +1129,53 @@ class SM_Public {
         else wp_send_json_error('Failed to delete');
     }
 
+    public function ajax_save_regulation_settings() {
+        if (!current_user_can('manage_options') && !current_user_can('sm_principal')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
+
+        $types_raw = explode("\n", str_replace("\r", "", $_POST['violation_types']));
+        $types = array();
+        foreach ($types_raw as $line) {
+            $parts = explode("|", $line);
+            if (count($parts) == 2) {
+                $types[trim($parts[0])] = trim($parts[1]);
+            }
+        }
+        if (!empty($types)) {
+            SM_Settings::save_violation_types($types);
+        }
+        SM_Settings::save_suggested_actions(array(
+            'low' => sanitize_textarea_field($_POST['suggested_low']),
+            'medium' => sanitize_textarea_field($_POST['suggested_medium']),
+            'high' => sanitize_textarea_field($_POST['suggested_high'])
+        ));
+        wp_send_json_success();
+    }
+
+    public function ajax_save_hierarchical_violations() {
+        if (!current_user_can('manage_options') && !current_user_can('sm_principal')) wp_send_json_error('Unauthorized');
+        if (!wp_verify_nonce($_POST['sm_nonce'], 'sm_admin_action')) wp_send_json_error('Security');
+
+        $processed = array();
+        if (isset($_POST['h_viol']) && is_array($_POST['h_viol'])) {
+            foreach ($_POST['h_viol'] as $level => $items) {
+                $processed[$level] = array();
+                foreach ($items as $item) {
+                    if (!empty($item['name'])) {
+                        $code = !empty($item['code']) ? $item['code'] : 'V'.rand(100,999);
+                        $processed[$level][$code] = array(
+                            'name' => sanitize_text_field($item['name']),
+                            'points' => intval($item['points']),
+                            'action' => sanitize_text_field($item['action'])
+                        );
+                    }
+                }
+            }
+        }
+        SM_Settings::save_hierarchical_violations($processed);
+        wp_send_json_success();
+    }
+
     public function ajax_delete_log() {
         if (!current_user_can('إدارة_النظام')) wp_send_json_error('Unauthorized');
         if (!wp_verify_nonce($_POST['nonce'], 'sm_admin_action')) wp_send_json_error('Security check failed');
@@ -1799,18 +1846,23 @@ class SM_Public {
         fputcsv($output, array('التاريخ', 'اسم الطالب', 'كود الطالب', 'الصف', 'الشعبة', 'النوع', 'الحدة', 'الدرجة', 'النقاط', 'التفاصيل', 'الإجراء المتخذ'));
 
         foreach ($records as $r) {
+            // Dynamic Linking
+            $reg = SM_Settings::get_regulation_by_code($r->violation_code);
+            $display_type = $reg ? $reg['name'] : $r->type;
+            $display_action = $reg ? $reg['action'] : $r->action_taken;
+
             fputcsv($output, array(
                 $r->created_at,
                 $r->student_name,
                 $r->student_code,
                 $r->class_name,
                 $r->section,
-                $r->type,
+                $display_type,
                 $r->severity,
                 $r->degree,
                 $r->points,
                 $r->details,
-                $r->action_taken
+                $display_action
             ));
         }
         fclose($output);
