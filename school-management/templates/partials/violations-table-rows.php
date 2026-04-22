@@ -10,13 +10,38 @@
     <?php
     $type_labels = SM_Settings::get_violation_types();
     $severity_labels = SM_Settings::get_severities();
+    $current_user = wp_get_current_user();
+    $sender_name = $current_user->display_name;
+
     foreach ($records as $row):
         // Dynamic Linking
         $reg = SM_Settings::get_regulation_by_code($row->violation_code);
         $display_type = $reg ? $reg['name'] : $row->type;
         $display_action = $reg ? $reg['action'] : $row->action_taken;
 
-        $waMsg = rawurlencode("تنبيه من المدرسة بخصوص الطالب: {$row->student_name}\nنوع المخالفة: {$display_type}\nالإجراء المتخذ: {$display_action}\nالتاريخ والوقت: ".date('Y-m-d H:i', strtotime($row->created_at)));
+        $msg_text = "*السلام عليكم ورحمة الله وبركاته،*\n\n";
+        $msg_text .= "إلى ولي أمر الطالب/ة: *{$row->student_name}*\n";
+        $msg_text .= "نحيطكم علماً بأنه تم تسجيل ملاحظة انضباطية رسمية في سجل الطالب وفق التفاصيل التالية:\n\n";
+
+        $msg_text .= "• *بيانات الطالب:*\n";
+        $msg_text .= "  - الاسم الكامل: {$row->student_name}\n";
+        $msg_text .= "  - الرقم الأكاديمي: {$row->student_code}\n";
+        $msg_text .= "  - الصف والشعبة: " . SM_Settings::format_grade_name($row->class_name, $row->section) . "\n\n";
+
+        $msg_text .= "• *تفاصيل الملاحظة:*\n";
+        $msg_text .= "  - نوع المخالفة: {$display_type}\n";
+        $msg_text .= "  - وصف الموقف: " . ($row->details ?: 'غير محدد') . "\n";
+        $msg_text .= "  - التاريخ والوقت: " . date('Y-m-d H:i', strtotime($row->created_at)) . "\n\n";
+
+        $msg_text .= "• *الإجراء المتخذ:*\n";
+        $msg_text .= "  - القرار: *{$display_action}*\n\n";
+
+        $msg_text .= "نرجو منكم التكرم بالمتابعة والتعاون مع إدارة المدرسة لمصلحة الطالب التربوية.\n\n";
+        $msg_text .= "*وتقبلوا فائق الاحترام والتقدير،*\n";
+        $msg_text .= "*وحدة الانضباط المدرسي*\n";
+        $msg_text .= "مسؤول الانضباط: {$sender_name}";
+
+        $waMsg = rawurlencode($msg_text);
         $raw_phone = $row->guardian_phone ?? '';
         $formatted_phone = SM_Settings::format_uae_phone($raw_phone);
     ?>
