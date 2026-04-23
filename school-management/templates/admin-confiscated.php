@@ -79,14 +79,16 @@
                 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div class="sm-form-group" style="grid-column: span 2;">
-                        <label class="sm-label">الطالب المعني:</label>
-                        <select name="student_id" class="sm-select" required>
-                            <option value="">-- اختر الطالب من القائمة --</option>
-                            <?php 
-                            $students = SM_DB::get_students();
-                            foreach($students as $s) echo '<option value="'.$s->id.'">'.$s->name.' ('.SM_Settings::format_grade_name($s->class_name, $s->section, 'short').')</option>';
-                            ?>
-                        </select>
+                        <label class="sm-label">البحث عن الطالب:</label>
+                        <input type="text" id="confiscated-student-search" class="sm-input" placeholder="اكتب اسم الطالب أو كوده..." onkeyup="confiscatedSearchStudents(this.value)" autocomplete="off">
+                        <div id="confiscated-search-results" style="background: #fff; border: 1px solid #ddd; border-top: none; max-height: 200px; overflow-y: auto; display: none; position: absolute; z-index: 100; width: calc(100% - 40px);"></div>
+
+                        <div id="confiscated-selected-student-box" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-top: 10px; position: relative;">
+                            <div style="font-weight: 800;" id="confiscated-selected-student-name"></div>
+                            <div style="font-size: 12px; color: #166534;" id="confiscated-selected-student-info"></div>
+                            <input type="hidden" name="student_id" id="confiscated-selected-student-id" required>
+                            <button type="button" onclick="resetConfiscatedStudent()" style="position: absolute; left: 10px; top: 10px; background: none; border: none; color: #e53e3e; cursor: pointer;">&times; تغيير الطالب</button>
+                        </div>
                     </div>
 
                     <div class="sm-form-group">
@@ -119,6 +121,23 @@
                             <span>تعهد بإعادة المادة بعد انتهاء الفترة المحددة</span>
                         </label>
                     </div>
+
+                    <div class="sm-form-group" style="grid-column: span 2; background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px solid #feebc8;">
+                        <label style="display:flex; align-items:center; gap:12px; cursor:pointer; font-weight:700; color:#c05621; margin-bottom:10px;">
+                            <input type="checkbox" name="link_violation" value="1" onchange="document.getElementById('violation-linking-fields').style.display = this.checked ? 'block' : 'none'">
+                            <span>ربط العملية بمخالفة سلوكية (حسم تلقائي من الدرجات)</span>
+                        </label>
+
+                        <div id="violation-linking-fields" style="display: none; padding-top: 10px; border-top: 1px dashed #feebc8;">
+                            <label class="sm-label">نوع المخالفة المرتبطة:</label>
+                            <select name="violation_code" class="sm-select">
+                                <option value="1.9">1.9 - سوء استخدام الأجهزة الإلكترونية الشخصية (3 درجات)</option>
+                                <option value="3.9">3.9 - حيازة مواد ممنوعة (10 درجات)</option>
+                                <option value="3.10">3.10 - التصوير داخل المدرسة بدون إذن (10 درجات)</option>
+                                <option value="other">أخرى (سيتم تسجيلها كمخالفة عامة)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="sm-btn" style="margin-top:20px; width: 100%; height:50px; font-size:1.1em;">تأكيد وحفظ عملية المصادرة</button>
@@ -128,10 +147,57 @@
 
     <script>
     (function() {
+        window.confiscatedSearchStudents = function(query) {
+            if (query.length < 2) {
+                document.getElementById('confiscated-search-results').style.display = 'none';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'sm_search_students');
+            formData.append('query', query);
+
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(s => {
+                        html += `<div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer;" onclick="selectConfiscatedStudent(${s.id}, '${s.name}', '${s.class_name} ${s.section}')">
+                                    <strong>${s.name}</strong> (${s.student_code})<br><small>${s.class_name} - ${s.section}</small>
+                                 </div>`;
+                    });
+                    document.getElementById('confiscated-search-results').innerHTML = html;
+                    document.getElementById('confiscated-search-results').style.display = 'block';
+                }
+            });
+        };
+
+        window.selectConfiscatedStudent = function(id, name, info) {
+            document.getElementById('confiscated-selected-student-id').value = id;
+            document.getElementById('confiscated-selected-student-name').innerText = name;
+            document.getElementById('confiscated-selected-student-info').innerText = info;
+            document.getElementById('confiscated-selected-student-box').style.display = 'block';
+            document.getElementById('confiscated-search-results').style.display = 'none';
+            document.getElementById('confiscated-student-search').style.display = 'none';
+        };
+
+        window.resetConfiscatedStudent = function() {
+            document.getElementById('confiscated-selected-student-id').value = '';
+            document.getElementById('confiscated-selected-student-box').style.display = 'none';
+            document.getElementById('confiscated-student-search').style.display = 'block';
+            document.getElementById('confiscated-student-search').value = '';
+            document.getElementById('confiscated-student-search').focus();
+        };
+
         const addForm = document.getElementById('add-confiscated-form');
         if (addForm) {
             addForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                if (!document.getElementById('confiscated-selected-student-id').value) {
+                    alert('يرجى اختيار طالب أولاً');
+                    return;
+                }
                 const formData = new FormData(this);
                 formData.append('action', 'sm_add_confiscated_ajax');
                 fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: formData })
@@ -140,6 +206,8 @@
                     if (res.success) {
                         smShowNotification('تم تسجيل المادة بنجاح');
                         setTimeout(() => location.reload(), 500);
+                    } else {
+                        smShowNotification(res.data || 'حدث خطأ ما', true);
                     }
                 });
             });
@@ -187,6 +255,13 @@
                 }
             });
         };
+
+        document.addEventListener('click', function(e) {
+            const results = document.getElementById('confiscated-search-results');
+            if (results && !results.contains(e.target) && e.target.id !== 'confiscated-student-search') {
+                results.style.display = 'none';
+            }
+        });
     })();
     </script>
 

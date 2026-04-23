@@ -698,6 +698,24 @@ class SM_Public {
         }
 
         if (SM_DB::add_confiscated_item($data)) {
+            // Optional violation linking
+            if (!empty($data['link_violation']) && $data['link_violation'] == '1') {
+                $violation_code = sanitize_text_field($data['violation_code'] ?? '');
+                $reg = SM_Settings::get_regulation_by_code($violation_code);
+
+                $violation_data = array(
+                    'student_id' => intval($data['student_id']),
+                    'type' => 'behavior',
+                    'severity' => 'medium',
+                    'degree' => 1,
+                    'violation_code' => $violation_code,
+                    'points' => $reg ? $reg['points'] : 0,
+                    'details' => 'تم تسجيل مخالفة مرتبطة بمصادرة مادة: ' . $data['item_name'],
+                    'action_taken' => $reg ? $reg['action'] : 'مصادرة المادة'
+                );
+
+                SM_DB::add_record($violation_data);
+            }
             wp_send_json_success('Added');
         } else {
             wp_send_json_error('Failed to add');

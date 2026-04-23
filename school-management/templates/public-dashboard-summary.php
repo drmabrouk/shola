@@ -116,12 +116,15 @@ function smSubmitSurveyResponse(surveyId, questionsCount) {
         <div style="font-size: 0.85em; color: var(--sm-text-gray); margin-bottom: 10px; font-weight: 700;">الإجراءات المتخذة</div>
         <div style="font-size: 2.5em; font-weight: 900; color: var(--sm-dark-color);"><?php echo esc_html($stats['total_actions'] ?? 0); ?></div>
     </div>
+    <?php if ($is_wp_admin || !empty($my_visibility['attendance'])): ?>
     <div class="sm-stat-card" style="border-right: 4px solid #e53e3e;">
         <div style="font-size: 0.85em; color: var(--sm-text-gray); margin-bottom: 10px; font-weight: 700;">غياب الطلاب (اليوم)</div>
         <div style="font-size: 2.5em; font-weight: 900; color: #e53e3e;"><?php echo esc_html($stats['absent_today'] ?? 0); ?></div>
     </div>
+    <?php endif; ?>
 </div>
 
+<?php if ($is_wp_admin || !empty($my_visibility['attendance'])): ?>
 <div style="background: #fff; padding: 20px 30px; border-radius: 12px; border: 1px solid var(--sm-border-color); margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between;">
     <div style="display: flex; gap: 40px; align-items: center;">
         <div>
@@ -136,6 +139,7 @@ function smSubmitSurveyResponse(surveyId, questionsCount) {
     </div>
     <a href="<?php echo add_query_arg('sm_tab', 'attendance'); ?>" class="sm-btn sm-btn-outline" style="width: auto; font-size: 12px;">عرض سجل الحضور التفصيلي</a>
 </div>
+<?php endif; ?>
 
 
 
