@@ -30,7 +30,6 @@
                     </div>
                 </div>
             <?php endif; ?>
-            <button type="button" onclick="window.print()" class="sm-btn" style="background:#27ae60; padding: 0 15px; height: 38px; min-width: 90px; font-size: 13px;" title="طباعة">طباعة</button>
         </div>
     </div>
 
@@ -360,7 +359,6 @@
                     <th>التاريخ</th>
                     <th>الدرجة</th>
                     <th>البند</th>
-                    <th>النقاط</th>
                     <th>تكرار</th>
                     <th>الحدة</th>
                     <th>الإجراءات</th>

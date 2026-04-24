@@ -21,25 +21,12 @@
 
         $msg_text = "*السلام عليكم ورحمة الله وبركاته،*\n\n";
         $msg_text .= "إلى ولي أمر الطالب/ة: *{$row->student_name}*\n";
-        $msg_text .= "نحيطكم علماً بأنه تم تسجيل ملاحظة انضباطية رسمية في سجل الطالب وفق التفاصيل التالية:\n\n";
+        $msg_text .= "الصف والشعبة: " . SM_Settings::format_grade_name($row->class_name, $row->section, 'short') . "\n";
+        $msg_text .= "نوع الملاحظة: *{$display_type}*\n\n";
 
-        $msg_text .= "• *بيانات الطالب:*\n";
-        $msg_text .= "  - الاسم الكامل: {$row->student_name}\n";
-        $msg_text .= "  - الرقم الأكاديمي: {$row->student_code}\n";
-        $msg_text .= "  - الصف والشعبة: " . SM_Settings::format_grade_name($row->class_name, $row->section) . "\n\n";
-
-        $msg_text .= "• *تفاصيل الملاحظة:*\n";
-        $msg_text .= "  - نوع المخالفة: {$display_type}\n";
-        $msg_text .= "  - وصف الموقف: " . ($row->details ?: 'غير محدد') . "\n";
-        $msg_text .= "  - التاريخ والوقت: " . date('Y-m-d H:i', strtotime($row->created_at)) . "\n\n";
-
-        $msg_text .= "• *الإجراء المتخذ:*\n";
-        $msg_text .= "  - القرار: *{$display_action}*\n\n";
-
-        $msg_text .= "نرجو منكم التكرم بالمتابعة والتعاون مع إدارة المدرسة لمصلحة الطالب التربوية.\n\n";
+        $msg_text .= "نرجو منكم المتابعة مع الإدارة.\n\n";
         $msg_text .= "*وتقبلوا فائق الاحترام والتقدير،*\n";
-        $msg_text .= "*وحدة الانضباط المدرسي*\n";
-        $msg_text .= "مسؤول الانضباط: {$sender_name}";
+        $msg_text .= "{$sender_name}";
 
         $waMsg = rawurlencode($msg_text);
         $raw_phone = $row->guardian_phone ?? '';
@@ -73,7 +60,6 @@
                 <div style="font-weight:600;"><?php echo esc_html($row->violation_code); ?></div>
                 <div style="font-size:11px; color:#718096;"><?php echo $display_type; ?></div>
             </td>
-            <td style="text-align:center; font-weight:800; color:#111F35;"><?php echo (int)$row->points; ?></td>
             <td style="text-align:center;"><span class="sm-badge" style="background:#edf2f7; color:#4a5568;"><?php echo (int)$row->recurrence_count; ?></span></td>
             <td>
                 <span class="sm-badge sm-badge-<?php echo esc_attr($row->severity); ?>">

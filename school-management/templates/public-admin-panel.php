@@ -414,13 +414,13 @@ $greeting = ($hour >= 5 && $hour < 12) ? 'صباح الخير' : 'مساء ال�
 
                 <?php if (($is_wp_admin || !empty($my_visibility['stats'])) && ($is_admin || $is_sys_admin || $is_principal || $is_supervisor || $is_teacher || $is_student || $is_parent)): ?>
                     <li class="sm-sidebar-item <?php echo $active_tab == 'stats' ? 'sm-active' : ''; ?>">
-                        <a href="<?php echo add_query_arg('sm_tab', 'stats'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-list-view"></span> سجل المخالفات</a>
+                        <a href="<?php echo remove_query_arg(['student_search', 'class_filter', 'section_filter', 'type_filter', 'start_date', 'end_date'], add_query_arg('sm_tab', 'stats')); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-list-view"></span> سجل المخالفات</a>
                     </li>
                 <?php endif; ?>
 
                 <?php if (($is_wp_admin || !empty($my_visibility['students'])) && ($is_admin || $is_sys_admin || $is_principal || $is_supervisor || $is_teacher)): ?>
                     <li class="sm-sidebar-item <?php echo $active_tab == 'students' ? 'sm-active' : ''; ?>">
-                        <a href="<?php echo add_query_arg('sm_tab', 'students'); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-groups"></span> إدارة الطلاب</a>
+                        <a href="<?php echo remove_query_arg(['student_search', 'class_filter', 'section_filter', 'teacher_filter'], add_query_arg('sm_tab', 'students')); ?>" class="sm-sidebar-link"><span class="dashicons dashicons-groups"></span> إدارة الطلاب</a>
                     </li>
                 <?php endif; ?>
 
